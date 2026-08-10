@@ -16,6 +16,17 @@ The goal is to help founders understand the potential of their ideas while makin
 
 ---
 
+## 📌 Setup the project
+
+#### Commands To Setup the Frontend
+```
+git clone https://github.com/vatsal633/ai_startup_validator.git
+
+cd client
+
+npm install
+```
+
 ## 🎯 Problem Statement
 
 Entrepreneurs often have business ideas but face difficulties in:
