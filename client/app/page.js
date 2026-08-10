@@ -5,6 +5,12 @@ import SectionHeading from "./components/SectionHeading";
 import Step from "./components/Step";
 import InfoBox from "./components/InfoBox";
 import Feature from "./components/Feature";
+import { Brain } from 'lucide-react';
+import { FileChartPie } from 'lucide-react';
+import { BriefcaseBusiness } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+
+
 
 export default function Home() {
   return (
@@ -53,7 +59,7 @@ export default function Home() {
             </Link>
 
             <Link
-              href="/register"
+              href="/signin"
               className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               Get Started
@@ -205,25 +211,25 @@ export default function Home() {
 
           <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Feature
-              icon="🤖"
+              icon={<Brain/>}
               title="AI Idea Validation"
               description="Get an AI-powered analysis of your startup idea, market potential, competition and risks."
             />
 
             <Feature
-              icon="📊"
+              icon={<FileChartPie/>}
               title="Detailed Insights"
               description="Understand your customers, business model, opportunities and potential challenges."
             />
 
             <Feature
-              icon="💼"
+              icon={<BriefcaseBusiness/>}
               title="Find Investors"
               description="Publish your startup and connect with investors interested in your industry."
             />
 
             <Feature
-              icon="🔐"
+              icon={<ShieldCheck/>}
               title="Controlled Disclosure"
               description="Keep sensitive business information private and decide who can access it."
             />
