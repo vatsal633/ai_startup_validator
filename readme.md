@@ -25,6 +25,8 @@ git clone https://github.com/vatsal633/ai_startup_validator.git
 cd client
 
 npm install
+
+npm run dev
 ```
 
 ## 🎯 Problem Statement
