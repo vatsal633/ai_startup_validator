@@ -182,7 +182,7 @@ Founder ↔ Investor Connection
 
 ### Database
 
-- MongoDB
+- postgreSQL
 
 ### Authentication & Security
 
