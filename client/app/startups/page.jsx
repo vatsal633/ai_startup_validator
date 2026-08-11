@@ -1,5 +1,7 @@
+
 import Link from "next/link";
 import StartupCard from "../components/StartupCard";
+import ThemeToggle from "../components/ui/themeToggle";
 
 const startups = [
   {
@@ -112,87 +114,92 @@ const categories = [
 
 export default function StartupPage() {
   return (
-    <main className="min-h-screen bg-[#f8fafc] text-slate-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">
 
-      {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
+      {/* ================= NAVBAR ================= */}
+      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur transition-colors dark:border-slate-800 dark:bg-slate-900/90">
         <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-6 lg:px-8">
 
+          {/* Logo */}
           <Link
             href="/"
             className="text-2xl font-bold tracking-tight"
           >
-            Venture<span className="text-indigo-600">AI</span>
+            Venture<span className="text-indigo-600 dark:text-indigo-400">AI</span>
           </Link>
 
+          {/* Navigation */}
           <div className="hidden items-center gap-8 md:flex">
             <Link
               href="/"
-              className="text-sm text-slate-500 hover:text-indigo-600"
+              className="text-sm text-slate-500 transition hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
             >
               Home
             </Link>
 
             <Link
               href="/startup"
-              className="text-sm font-semibold text-indigo-600"
+              className="text-sm font-semibold text-indigo-600 dark:text-indigo-400"
             >
               Explore Startups
             </Link>
 
             <Link
               href="/analyze"
-              className="text-sm text-slate-500 hover:text-indigo-600"
+              className="text-sm text-slate-500 transition hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
             >
               Analyze Idea
             </Link>
           </div>
 
+          {/* Auth */}
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="hidden px-4 py-2 text-sm font-medium text-slate-600 sm:block"
+              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 sm:block"
             >
               Login
             </Link>
 
             <Link
               href="/register"
-              className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+              className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700"
             >
               Get Started
             </Link>
-          </div>
 
+            <ThemeToggle />
+          </div>
         </div>
       </nav>
 
-
-      {/* HEADER */}
-      <section className="border-b border-slate-200 bg-white">
+      {/* ================= HEADER ================= */}
+      <section className="border-b border-slate-200 bg-white transition-colors dark:border-slate-800 dark:bg-slate-900">
 
         <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
 
           <div className="max-w-3xl">
 
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600">
+            {/* Badge */}
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
               ✦ Startup Discovery
             </div>
 
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
               Discover the next
-              <span className="text-indigo-600"> big idea.</span>
+              <span className="text-indigo-600 dark:text-indigo-400">
+                {" "}big idea.
+              </span>
             </h1>
 
-            <p className="mt-5 text-lg leading-8 text-slate-500">
+            <p className="mt-5 text-lg leading-8 text-slate-500 dark:text-slate-400">
               Explore AI-validated startup ideas from founders around
               the world and discover opportunities worth investing in.
             </p>
 
           </div>
 
-
-          {/* SEARCH */}
+          {/* ================= SEARCH ================= */}
           <div className="mt-10 flex flex-col gap-3 md:flex-row">
 
             <div className="relative flex-1">
@@ -204,23 +211,20 @@ export default function StartupPage() {
               <input
                 type="text"
                 placeholder="Search startups, industries or technologies..."
-                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
               />
 
             </div>
 
-            <button className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            <button className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
               ⚙ Filters
             </button>
 
           </div>
-
         </div>
-
       </section>
 
-
-      {/* MAIN CONTENT */}
+      {/* ================= MAIN CONTENT ================= */}
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
 
         {/* CATEGORY FILTERS */}
@@ -231,8 +235,8 @@ export default function StartupPage() {
               key={category}
               className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition ${
                 index === 0
-                  ? "bg-slate-900 text-white"
-                  : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
+                  ? "bg-slate-900 text-white dark:bg-indigo-600"
+                  : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
               }`}
             >
               {category}
@@ -241,21 +245,20 @@ export default function StartupPage() {
 
         </div>
 
-
         {/* TOP BAR */}
         <div className="mb-6 flex items-center justify-between">
 
           <div>
-            <h2 className="text-xl font-bold">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               Featured Startups
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               126 startups discovered
             </p>
           </div>
 
-          <select className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none">
+          <select className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
             <option>Recommended</option>
             <option>Highest Score</option>
             <option>Newest</option>
@@ -264,8 +267,7 @@ export default function StartupPage() {
 
         </div>
 
-
-        {/* STARTUP FEED */}
+        {/* ================= STARTUP FEED ================= */}
         <div className="space-y-5">
 
           {startups.map((startup) => (
@@ -279,36 +281,36 @@ export default function StartupPage() {
 
       </section>
 
+      {/* ================= CTA ================= */}
+      <section className="border-t border-slate-200 bg-white px-6 py-20 text-center transition-colors dark:border-slate-800 dark:bg-slate-900">
 
-      {/* CTA */}
-      <section className="border-t border-slate-200 bg-white px-6 py-20 text-center">
-
-        <h2 className="text-3xl font-bold">
+        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
           Have a startup idea?
         </h2>
 
-        <p className="mx-auto mt-3 max-w-lg text-slate-500">
+        <p className="mx-auto mt-3 max-w-lg text-slate-500 dark:text-slate-400">
           Validate your idea with AI and get discovered by
           potential investors.
         </p>
 
         <Link
           href="/analyze"
-          className="mt-7 inline-block rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white hover:bg-indigo-700"
+          className="mt-7 inline-block rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
         >
           Analyze Your Idea →
         </Link>
 
       </section>
 
-
-      {/* FOOTER */}
-      <footer className="border-t border-slate-200 bg-white px-6 py-10">
+      {/* ================= FOOTER ================= */}
+      <footer className="border-t border-slate-200 bg-white px-6 py-10 transition-colors dark:border-slate-800 dark:bg-slate-900">
 
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
 
-          <div className="font-bold">
-            Venture<span className="text-indigo-600">AI</span>
+          <div className="font-bold text-slate-900 dark:text-white">
+            Venture<span className="text-indigo-600 dark:text-indigo-400">
+              AI
+            </span>
           </div>
 
           <p className="text-sm text-slate-400">
@@ -326,3 +328,4 @@ export default function StartupPage() {
     </main>
   );
 }
+
