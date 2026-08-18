@@ -11,6 +11,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "first_name", "last_name", "email", "password","role"]
 
+
+    def validate_role(self, value):
+        allowed_roles = ["founder","Founder","investor","Investor"]
+
+        if value not in allowed_roles:
+            raise serializers.ValidationError(
+                "You cannot register with this role."
+            )
+
+        return value
+    
     def create(self, validated_data):
         user = User.objects.create_user(
             email=validated_data["email"],
