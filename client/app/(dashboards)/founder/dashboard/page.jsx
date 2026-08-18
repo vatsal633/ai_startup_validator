@@ -1,131 +1,18 @@
 import React from "react";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ui/themeToggle";
-import NavItem from "../components/NavItem";
-import StatCard from "../components/StateCard";
-import StartupCard from "../components/StartupCard";
-import QuickAction from "../components/QuickAction";
-import Activity from "../components/Activity";
-import { startups,activities } from "@/app/dummydata/dashboardData";
-
+import NavItem from "../../components/NavItem";
+import StatCard from "../../components/StateCard";
+import StartupCard from "../../components/StartupCard";
+import QuickAction from "../../components/QuickAction";
+import Activity from "../../components/Activity";
+import { startups, activities } from "@/app/dummydata/dashboardData";
+import TopNavbar from "../../components/TopNavbar";
 
 const founderDashboard = () => {
   return (
     <main className="min-h-screen bg-[#f8fafc] text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">
-      {/* TOP NAVBAR */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
-              V
-            </div>
-
-            <span className="font-bold">
-              Venture<span className="text-indigo-600">AI</span>
-            </span>
-          </div>
-
-          <div className="hidden lg:block">
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Founder Dashboard
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Theme toggle */}
-            <ThemeToggle />
-
-            {/* Notification */}
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800">
-              🔔
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-indigo-600" />
-            </button>
-
-            {/* Profile */}
-            <button className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-900">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 font-semibold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
-                V
-              </div>
-
-              <div className="hidden text-left sm:block">
-                <p className="text-sm font-semibold">Founder</p>
-                <p className="text-xs text-slate-400">Founder Account</p>
-              </div>
-            </button>
-          </div>
-        </div>
-      </header>
-
       <div className="flex">
-        {/* SIDEBAR */}
-        <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block dark:border-slate-800 dark:bg-slate-900">
-          <div className="sticky top-16 flex h-[calc(100vh-4rem)] flex-col p-4">
-            {/* Logo */}
-            <Link href="/" className="mb-8 flex items-center gap-3 px-3 py-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">
-                V
-              </div>
-
-              <span className="text-lg font-bold">
-                Venture<span className="text-indigo-600">AI</span>
-              </span>
-            </Link>
-
-            {/* Navigation */}
-            <nav className="space-y-1">
-              <NavItem href="/dashboard" icon="⌂" label="Dashboard" active />
-
-              <NavItem href="/dashboard/startups" icon="💡" label="My Ideas" />
-
-              <NavItem
-                href="/dashboard/analyze"
-                icon="✦"
-                label="Analyze Idea"
-              />
-
-              <NavItem href="/dashboard/analytics" icon="◔" label="Analytics" />
-
-              <NavItem
-                href="/dashboard/requests"
-                icon="💰"
-                label="Investor Requests"
-                badge="4"
-              />
-            </nav>
-
-            <div className="my-6 border-t border-slate-200 dark:border-slate-800" />
-
-            <nav className="space-y-1">
-              <NavItem
-                href="/dashboard/notifications"
-                icon="🔔"
-                label="Notifications"
-              />
-
-              <NavItem href="/dashboard/settings" icon="⚙" label="Settings" />
-            </nav>
-
-            {/* Bottom CTA */}
-            <div className="mt-auto rounded-xl bg-indigo-50 p-4 dark:bg-indigo-950/40">
-              <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-300">
-                Have another idea?
-              </p>
-
-              <p className="mt-1 text-xs leading-5 text-indigo-600 dark:text-indigo-400">
-                Let AI validate your next business idea.
-              </p>
-
-              <Link
-                href="/analyze"
-                className="mt-3 block rounded-lg bg-indigo-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-indigo-700"
-              >
-                Analyze Idea →
-              </Link>
-            </div>
-          </div>
-        </aside>
-
         {/* MAIN CONTENT */}
         <main className="min-w-0 flex-1">
           <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">

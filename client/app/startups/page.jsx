@@ -1,7 +1,9 @@
-
+"use client";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import StartupCard from "../components/StartupCard";
 import ThemeToggle from "../components/ui/themeToggle";
+import {Search} from "lucide-react"
 
 const startups = [
   {
@@ -113,19 +115,29 @@ const categories = [
 ];
 
 export default function StartupPage() {
+  const [startupData, setStartupData] = useState(startups);
+  const [searchItem, SetsearchItem] = useState("");
+
+  const handleSearch = () => {
+    if(searchItem==="") return;
+
+    const filteredItems = startupData.filter((item)=>(
+      item.name.toLowerCase().includes(searchItem.toLowerCase())
+    ))
+
+    console.log(filteredItems);
+    
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">
-
       {/* ================= NAVBAR ================= */}
       <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur transition-colors dark:border-slate-800 dark:bg-slate-900/90">
         <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-6 lg:px-8">
-
           {/* Logo */}
-          <Link
-            href="/"
-            className="text-2xl font-bold tracking-tight"
-          >
-            Venture<span className="text-indigo-600 dark:text-indigo-400">AI</span>
+          <Link href="/" className="text-2xl font-bold tracking-tight">
+            Venture
+            <span className="text-indigo-600 dark:text-indigo-400">AI</span>
           </Link>
 
           {/* Navigation */}
@@ -175,11 +187,8 @@ export default function StartupPage() {
 
       {/* ================= HEADER ================= */}
       <section className="border-b border-slate-200 bg-white transition-colors dark:border-slate-800 dark:bg-slate-900">
-
         <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
-
           <div className="max-w-3xl">
-
             {/* Badge */}
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
               ✦ Startup Discovery
@@ -188,22 +197,20 @@ export default function StartupPage() {
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
               Discover the next
               <span className="text-indigo-600 dark:text-indigo-400">
-                {" "}big idea.
+                {" "}
+                big idea.
               </span>
             </h1>
 
             <p className="mt-5 text-lg leading-8 text-slate-500 dark:text-slate-400">
-              Explore AI-validated startup ideas from founders around
-              the world and discover opportunities worth investing in.
+              Explore AI-validated startup ideas from founders around the world
+              and discover opportunities worth investing in.
             </p>
-
           </div>
 
           {/* ================= SEARCH ================= */}
           <div className="mt-10 flex flex-col gap-3 md:flex-row">
-
             <div className="relative flex-1">
-
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                 🔍
               </span>
@@ -211,25 +218,31 @@ export default function StartupPage() {
               <input
                 type="text"
                 placeholder="Search startups, industries or technologies..."
+                value={searchItem}
+                onChange={(e) => {
+                  SetsearchItem(e.target.value);
+                }}
                 className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
               />
 
+              
             </div>
+
+            <button className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" onClick={handleSearch}>
+              {<Search/>}
+            </button>
 
             <button className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
               ⚙ Filters
             </button>
-
           </div>
         </div>
       </section>
 
       {/* ================= MAIN CONTENT ================= */}
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-
         {/* CATEGORY FILTERS */}
         <div className="mb-10 flex gap-2 overflow-x-auto pb-2">
-
           {categories.map((category, index) => (
             <button
               key={category}
@@ -242,12 +255,10 @@ export default function StartupPage() {
               {category}
             </button>
           ))}
-
         </div>
 
         {/* TOP BAR */}
         <div className="mb-6 flex items-center justify-between">
-
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               Featured Startups
@@ -264,33 +275,24 @@ export default function StartupPage() {
             <option>Newest</option>
             <option>Funding Required</option>
           </select>
-
         </div>
 
         {/* ================= STARTUP FEED ================= */}
         <div className="space-y-5">
-
           {startups.map((startup) => (
-            <StartupCard
-              key={startup.id}
-              startup={startup}
-            />
+            <StartupCard key={startup.id} startup={startup} />
           ))}
-
         </div>
-
       </section>
 
       {/* ================= CTA ================= */}
       <section className="border-t border-slate-200 bg-white px-6 py-20 text-center transition-colors dark:border-slate-800 dark:bg-slate-900">
-
         <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
           Have a startup idea?
         </h2>
 
         <p className="mx-auto mt-3 max-w-lg text-slate-500 dark:text-slate-400">
-          Validate your idea with AI and get discovered by
-          potential investors.
+          Validate your idea with AI and get discovered by potential investors.
         </p>
 
         <Link
@@ -299,33 +301,23 @@ export default function StartupPage() {
         >
           Analyze Your Idea →
         </Link>
-
       </section>
 
       {/* ================= FOOTER ================= */}
       <footer className="border-t border-slate-200 bg-white px-6 py-10 transition-colors dark:border-slate-800 dark:bg-slate-900">
-
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
-
           <div className="font-bold text-slate-900 dark:text-white">
-            Venture<span className="text-indigo-600 dark:text-indigo-400">
-              AI
-            </span>
+            Venture
+            <span className="text-indigo-600 dark:text-indigo-400">AI</span>
           </div>
 
           <p className="text-sm text-slate-400">
             AI-powered startup validation & investor discovery
           </p>
 
-          <p className="text-xs text-slate-400">
-            © 2026 VentureAI
-          </p>
-
+          <p className="text-xs text-slate-400">© 2026 VentureAI</p>
         </div>
-
       </footer>
-
     </main>
   );
 }
-
