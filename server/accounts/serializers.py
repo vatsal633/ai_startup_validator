@@ -9,7 +9,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "email", "password"]
+        fields = ["id", "first_name", "last_name", "email", "password","role"]
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -17,7 +17,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data["password"],
             first_name=validated_data.get("first_name", ""),
             last_name=validated_data.get("last_name", ""),
-            role="founder",  # default — no role selector in the current signup form
+            role=validated_data["role"],  # default — no role selector in the current signup form
         )
         return user
 

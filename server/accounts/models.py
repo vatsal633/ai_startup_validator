@@ -26,7 +26,7 @@ class User(AbstractUser):
         INVESTOR = "investor", "Investor"
         ADMIN = "admin", "Admin"
 
-    username = None  # not used — frontend never collects this
+    username = models.TextField(blank=False,null=False)  # not used — frontend never collects this
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.FOUNDER)
     bio = models.TextField(blank=True, null=True)
