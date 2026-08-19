@@ -33,4 +33,4 @@ class IdeaReport(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Report for {self.idea.title}"
+        return f"Report for {self.idea.title}" 
