@@ -1,8 +1,36 @@
-
+"use client"
+import React,{useState} from "react";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ui/themeToggle";
+import { login } from "../apis/auth.api";
+
 
 export default function LoginPage() {
+  const [formData, setFormData] = useState({
+    email:"",
+    password:""
+  })
+
+  const handleSubmit=async(e)=>{
+    try {
+      e.preventDefault()
+      console.log(formData);
+      
+      const res = await login(formData)
+      console.log(res)
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const handleChange=(e)=>{
+    const {name,value} = e.target
+    setFormData((prev)=>({
+      ...prev,
+      [name]:value
+    }))
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-6 lg:px-8 lg:py-8">
@@ -103,6 +131,9 @@ export default function LoginPage() {
                   <input
                     id="email"
                     type="email"
+                    value={formData.email}
+                    name="email"
+                    onChange={e=>handleChange(e)}
                     placeholder="you@company.com"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                   />
@@ -120,6 +151,9 @@ export default function LoginPage() {
                   <input
                     id="password"
                     type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={e=>handleChange(e)}
                     placeholder="Enter your password"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                   />
@@ -149,8 +183,9 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   className="w-full rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 dark:shadow-indigo-950/40"
+                  onClick={handleSubmit}
                 >
-                  Sign in
+                  Log In
                 </button>
               </form>
 
