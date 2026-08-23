@@ -1,35 +1,60 @@
-"use client"
-import React,{useState} from "react";
-import Link from "next/link";
-import ThemeToggle from "@/app/components/ui/themeToggle";
-import { login } from "../apis/auth.api";
+"use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { jwtDecode } from "jwt-decode";
+import ThemeToggle from "@/app/components/ui/themeToggle";
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    email:"",
-    password:""
-  })
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit=async(e)=>{
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
     try {
-      e.preventDefault()
-      console.log(formData);
-      
-      const res = await login(formData)
-      console.log(res)
-    } catch (error) {
-      console.log(error);
-    }
-  }
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
-  const handleChange=(e)=>{
-    const {name,value} = e.target
-    setFormData((prev)=>({
-      ...prev,
-      [name]:value
-    }))
-  }
+      if (!res.ok) {
+        throw new Error("Invalid email or password");
+      }
+
+      const data = await res.json();
+      localStorage.setItem("access_token", data.access);
+      localStorage.setItem("refresh_token", data.refresh);
+
+      // decode the access token to read the embedded role claim
+      const decoded = jwtDecode(data.access);
+      const role = decoded.role;
+
+      if (role === "founder") {
+        router.push("/founder/dashboard");
+      } else if (role === "investor") {
+        router.push("/investor/dashboard");
+      } else if (role === "admin") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/"); // fallback, shouldn't normally happen
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">
@@ -37,20 +62,16 @@ export default function LoginPage() {
 
         {/* ================= NAVBAR ================= */}
         <nav className="flex items-center justify-between rounded-full border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:px-6">
-          <Link
-            href="/"
-            className="text-xl font-bold tracking-tight"
-          >
+          <Link href="/" className="text-xl font-bold tracking-tight">
             Venture<span className="text-indigo-600 dark:text-indigo-400">AI</span>
           </Link>
-
           <Link
             href="/"
             className="text-sm font-medium text-slate-600 transition hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400"
           >
             Back to home
           </Link>
-          <ThemeToggle/>
+          <ThemeToggle />
         </nav>
 
         {/* ================= LOGIN CONTAINER ================= */}
@@ -59,35 +80,25 @@ export default function LoginPage() {
 
             {/* ================= LEFT PANEL ================= */}
             <section className="relative hidden overflow-hidden bg-slate-950 lg:flex lg:flex-col lg:justify-between">
-
-              {/* Background */}
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(129,140,248,0.35),_transparent_40%),linear-gradient(135deg,_#4338ca_0%,_#312e81_45%,_#111827_100%)]" />
-
               <div className="relative z-10 flex h-full flex-col justify-between p-10 text-white">
-
                 <div>
-                  {/* Badge */}
                   <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm font-medium backdrop-blur">
                     <span>✦</span>
                     AI-Powered Startup Validation
                   </div>
-
                   <h1 className="mt-8 max-w-md text-4xl font-bold leading-tight">
-                    Welcome back to your founder workspace.
+                    Welcome back to your workspace.
                   </h1>
-
                   <p className="mt-4 max-w-md text-base leading-7 text-indigo-100">
                     Review startup insights, track opportunities, and continue
                     validating ideas with confidence.
                   </p>
                 </div>
-
-                {/* Benefits */}
                 <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
                   <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-200">
                     Why founders love it
                   </p>
-
                   <ul className="mt-3 space-y-2 text-sm text-slate-100">
                     <li>• Instant AI analysis for your startup idea</li>
                     <li>• Clear investor-ready summaries</li>
@@ -99,78 +110,58 @@ export default function LoginPage() {
 
             {/* ================= RIGHT PANEL ================= */}
             <section className="px-6 py-8 transition-colors sm:px-10 sm:py-10 lg:px-12 lg:py-12">
-
-              {/* Header */}
               <div className="mb-8">
                 <p className="text-sm font-semibold uppercase tracking-[0.3em] text-indigo-600 dark:text-indigo-400">
                   Welcome back
                 </p>
-
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
                   Sign in to VentureAI
                 </h2>
-
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
                   Access your dashboard, continue your analysis, and manage
                   startup opportunities.
                 </p>
               </div>
 
-              {/* ================= LOGIN FORM ================= */}
-              <form className="space-y-5">
-
-                {/* Email */}
+              <form className="space-y-5" onSubmit={handleSubmit}>
                 <div>
-                  <label
-                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                    htmlFor="email"
-                  >
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="email">
                     Email address
                   </label>
-
                   <input
                     id="email"
                     type="email"
-                    value={formData.email}
-                    name="email"
-                    onChange={e=>handleChange(e)}
                     placeholder="you@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                   />
                 </div>
 
-                {/* Password */}
                 <div>
-                  <label
-                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
-                    htmlFor="password"
-                  >
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="password">
                     Password
                   </label>
-
                   <input
                     id="password"
                     type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={e=>handleChange(e)}
                     placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:bg-slate-800 dark:focus:ring-indigo-500/20"
                   />
                 </div>
 
-                {/* Remember / Forgot */}
                 <div className="flex items-center justify-between text-sm">
-
                   <label className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                     <input
                       type="checkbox"
                       className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800"
                     />
-
                     Remember me
                   </label>
-
                   <Link
                     href="#"
                     className="font-medium text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
@@ -179,35 +170,30 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                {/* Sign In */}
+                {error && <p className="text-sm text-red-500">{error}</p>}
+
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 dark:shadow-indigo-950/40"
-                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:opacity-60 dark:shadow-indigo-950/40"
                 >
-                  Log In
+                  {loading ? "Signing in..." : "Sign in"}
                 </button>
               </form>
 
-              {/* ================= DIVIDER ================= */}
               <div className="mt-6 flex items-center gap-3 text-sm text-slate-400">
                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-
                 <span>or continue with</span>
-
                 <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
               </div>
 
-              {/* ================= GOOGLE ================= */}
               <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
                 <span>G</span>
                 Continue with Google
               </button>
 
-              {/* ================= REGISTER ================= */}
               <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
                 New here?{" "}
-
                 <Link
                   href="/signin"
                   className="font-semibold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
@@ -215,7 +201,6 @@ export default function LoginPage() {
                   Create an account
                 </Link>
               </p>
-
             </section>
           </div>
         </div>
@@ -223,4 +208,3 @@ export default function LoginPage() {
     </main>
   );
 }
-
