@@ -17,11 +17,17 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      setMessage(`Password reset link sent to ${email}`);
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/password-reset/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      // always show success — regardless of whether the email exists (security choice from the backend)
+      setMessage(`If an account exists for ${email}, a reset link has been sent.`);
       setEmail("");
     } catch (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
