@@ -3,6 +3,8 @@ import axios from "axios";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const login = async (FormData) => {
+  console.log(FormData);
+  
     try {
         const response = await axios.post(
             `${API_URL}/api/auth/login/`,
@@ -17,7 +19,7 @@ export const login = async (FormData) => {
     }
 };
 
-export const singIn= async(FormData)=>{
+export const signIn= async(FormData)=>{
     try {
         const response = await axios.post(`${API_URL}/api/auth/register/`,FormData)
         return response?.data

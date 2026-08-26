@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { jwtDecode } from "jwt-decode";
 import ThemeToggle from "@/app/components/ui/themeToggle";
+import { login } from "../apis/auth.api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,25 +20,13 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const res = await login({email,password})
 
-      if (!res.ok) {
-        throw new Error("Invalid email or password");
-      }
+      localStorage.setItem("access_token", res.access);
+      localStorage.setItem("refresh_token", res.refresh);
 
-      const data = await res.json();
-      localStorage.setItem("access_token", data.access);
-      localStorage.setItem("refresh_token", data.refresh);
-
-      // decode the access token to read the embedded role claim
-      const decoded = jwtDecode(data.access);
+     
+      const decoded = jwtDecode(res.access);
       const role = decoded.role;
 
       if (role === "founder") {
@@ -115,7 +104,7 @@ export default function LoginPage() {
                   Welcome back
                 </p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
-                  Sign in to VentureAI
+                  Log in to VentureAI Account
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
                   Access your dashboard, continue your analysis, and manage
@@ -163,7 +152,7 @@ export default function LoginPage() {
                     Remember me
                   </label>
                   <Link
-                    href="#"
+                    href="forgetpassword/"
                     className="font-medium text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                   >
                     Forgot password?

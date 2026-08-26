@@ -5,7 +5,7 @@ import NavItem from "./NavItem";
 const Sidebar = ({ activeTab }) => {
     const navitems = [
         {label:"dashboard",hred:"founder/dashboard",icon:"⌂",isActive:true},
-        {label:"my ideas",hred:"founder/ideas",icon:"💡",isActive:false},
+        {label:"my ideas",hred:"founder/myideas",icon:"💡",isActive:false},
         {label:"analyze my idea",hred:"founder/analyze",icon:"✦",isActive:false},
         {label:"my analytics",hred:"founder/analytics",icon:"◔",isActive:false},
         
@@ -36,7 +36,7 @@ const Sidebar = ({ activeTab }) => {
               active
             />
 
-            <NavItem href="/founder/startups" icon="💡" label="My Ideas" />
+            <NavItem href="/founder/myideas" icon="💡" label="My Ideas" />
 
             <NavItem href="/founder/analyze" icon="✦" label="Analyze Idea" />
 

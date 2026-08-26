@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ui/themeToggle";
+import { signIn ,login} from "../apis/auth.api";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -27,40 +28,23 @@ export default function SignInPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
-            email,
-            password,
-            role,
-          }),
-        }
-      );
+      const formData = {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        password,
+        role,
+      };
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const firstError = Object.values(data)[0]?.[0] || "Registration failed";
-        throw new Error(firstError);
-      }
+      
+      const res = await signIn(formData)
+      console.log(res)
 
-      const loginRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-      const loginData = await loginRes.json();
-      localStorage.setItem("access_token", loginData.access);
-      localStorage.setItem("refresh_token", loginData.refresh);
+      const loginRes = await login({email,password})
 
-      // redirect based on chosen role
+      localStorage.setItem("access_token", loginRes.access);
+      localStorage.setItem("refresh_token", loginRes.refresh);
+
       if (role === "founder") {
         router.push("/founder/dashboard");
       } else {
@@ -76,11 +60,11 @@ export default function SignInPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-6 lg:px-8 lg:py-8">
-
         {/* NAVBAR — unchanged */}
         <nav className="flex items-center justify-between rounded-full border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur transition-colors dark:border-slate-800 dark:bg-slate-900/80 sm:px-6">
           <Link href="/" className="text-xl font-bold tracking-tight">
-            Venture<span className="text-indigo-600 dark:text-indigo-400">AI</span>
+            Venture
+            <span className="text-indigo-600 dark:text-indigo-400">AI</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link
@@ -95,7 +79,6 @@ export default function SignInPage() {
 
         <div className="flex flex-1 items-center justify-center py-10 sm:py-14">
           <div className="grid w-full max-w-6xl overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl shadow-slate-200/70 transition-colors dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/30 lg:grid-cols-[1.05fr_0.95fr]">
-
             {/* LEFT PANEL — unchanged */}
             <section className="relative hidden overflow-hidden bg-slate-950 lg:flex lg:flex-col lg:justify-between">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(129,140,248,0.35),_transparent_40%),linear-gradient(135deg,_#4338ca_0%,_#312e81_45%,_#111827_100%)]" />
@@ -109,8 +92,8 @@ export default function SignInPage() {
                     Create your account.
                   </h1>
                   <p className="mt-4 max-w-md text-base leading-7 text-indigo-100">
-                    Start analyzing ideas, building investor-ready profiles,
-                    and discovering opportunities in one place.
+                    Start analyzing ideas, building investor-ready profiles, and
+                    discovering opportunities in one place.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
@@ -142,7 +125,6 @@ export default function SignInPage() {
               </div>
 
               <form className="space-y-5" onSubmit={handleSubmit}>
-
                 {/* ================= ROLE SELECTOR ================= */}
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -176,7 +158,10 @@ export default function SignInPage() {
 
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="first-name">
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                      htmlFor="first-name"
+                    >
                       First name
                     </label>
                     <input
@@ -190,7 +175,10 @@ export default function SignInPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="last-name">
+                    <label
+                      className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                      htmlFor="last-name"
+                    >
                       Last name
                     </label>
                     <input
@@ -206,7 +194,10 @@ export default function SignInPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="email">
+                  <label
+                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                    htmlFor="email"
+                  >
                     Email address
                   </label>
                   <input
@@ -221,7 +212,10 @@ export default function SignInPage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="password">
+                  <label
+                    className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300"
+                    htmlFor="password"
+                  >
                     Password
                   </label>
                   <input
@@ -263,7 +257,7 @@ export default function SignInPage() {
                   href="/login"
                   className="font-semibold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
-                  Sign in
+                  Log in
                 </Link>
               </p>
             </section>
