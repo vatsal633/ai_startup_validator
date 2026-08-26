@@ -1,13 +1,11 @@
 import React from "react";
 import Link from "next/link";
-import ThemeToggle from "@/app/components/ui/themeToggle";
-import NavItem from "../../components/NavItem";
 import StatCard from "../../components/StateCard";
 import StartupCard from "../../components/StartupCard";
 import QuickAction from "../../components/QuickAction";
 import Activity from "../../components/Activity";
 import { startups, activities } from "@/app/dummydata/dashboardData";
-import TopNavbar from "../../components/TopNavbar";
+
 
 const founderDashboard = () => {
   return (
@@ -83,7 +81,7 @@ const founderDashboard = () => {
                   </div>
 
                   <Link
-                    href="/dashboard/startups"
+                    href="/founder/myideas"
                     className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
                   >
                     View all →
