@@ -191,3 +191,5 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
