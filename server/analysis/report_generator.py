@@ -60,7 +60,7 @@ def generate_report(idea: "Idea") -> dict:
     prompt = build_prompt(idea)
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model="gemini-3.6-flash",
         contents=prompt,
     )
     text = response.text.strip()
