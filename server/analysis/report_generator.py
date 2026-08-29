@@ -41,29 +41,29 @@ Be honest and specific — reference the actual details given, don't produce gen
 def build_prompt(idea: "Idea") -> str:
     return f"""{REPORT_SCHEMA_INSTRUCTIONS}
 
-    STARTUP DETAILS:
-    Idea: {idea.idea}
-    Industry: {idea.industry}
-    Problem: {idea.problem}
-    Solution: {idea.solution}
-    Target customer: {idea.target_customer}
-    Differentiator: {idea.differentiator}
-    Country: {idea.country}
-    Business model: {idea.get_business_model_display()}
-    Stage: {idea.get_stage_display()}
-    Funding requirement: ₹{idea.funding_requirement}
-    Competitors: {idea.competitors or "Not specified"}
-    """
+STARTUP DETAILS:
+Idea: {idea.idea}
+Industry: {idea.industry}
+Problem: {idea.problem}
+Solution: {idea.solution}
+Target customer: {idea.target_customer}
+Differentiator: {idea.differentiator}
+Country: {idea.country}
+Business model: {idea.get_business_model_display()}
+Stage: {idea.get_stage_display()}
+Funding requirement: ₹{idea.funding_requirement}
+Competitors: {idea.competitors or "Not specified"}
+"""
 
 
 def generate_report(idea: "Idea") -> dict:
     prompt = build_prompt(idea)
 
-    response = client.models.generate_content(
+    interaction = client.interactions.create(
         model="gemini-3.6-flash",
-        contents=prompt,
+        input=prompt,
     )
-    text = response.text.strip()
+    text = interaction.output_text.strip()
 
     # Gemini sometimes wraps JSON in markdown fences despite instructions — strip defensively
     if text.startswith("```"):
