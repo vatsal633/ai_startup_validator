@@ -2,11 +2,13 @@ from django.shortcuts import render
 
 # Create your views here.
 from rest_framework import generics, permissions
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Idea, IdeaReport
 from .serializers import IdeaCreateSerializer, IdeaTeaserSerializer, IdeaDetailSerializer
 from analysis.report_generator import generate_report
+from connections.models import ConnectionRequest
 
 
 class IdeaCreateView(generics.CreateAPIView):
@@ -57,3 +59,21 @@ class IdeaDetailView(generics.RetrieveAPIView):
     queryset = Idea.objects.select_related("founder", "report")
     serializer_class = IdeaDetailSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+class IdeaDetailView(generics.RetrieveAPIView):
+    queryset = Idea.objects.select_related("founder", "report")
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        idea = self.get_object()
+        user = self.request.user
+
+        is_founder = idea.founder_id == user.id
+        is_admin = user.role == "admin"
+        has_accepted_connection = ConnectionRequest.objects.filter(
+            idea=idea, investor=user, status=ConnectionRequest.Status.ACCEPTED
+        ).exists()
+
+        if is_founder or is_admin or has_accepted_connection:
+            return IdeaDetailSerializer
+        return IdeaTeaserSerializer
