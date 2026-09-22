@@ -1,8 +1,9 @@
 import React from "react";
 import Link from "next/link";
 import NavItem from "./NavItem";
+import { Bookmark } from 'lucide-react';
 
-const Sidebar = ({ activeTab }) => {
+const Sidebar = ({ activeTab,role }) => {
     const navitems = [
         {label:"dashboard",hred:"founder/dashboard",icon:"⌂",isActive:true},
         {label:"my ideas",hred:"founder/myideas",icon:"💡",isActive:false},
@@ -27,7 +28,8 @@ const Sidebar = ({ activeTab }) => {
             </span>
           </Link>
 
-          {/* Navigation */}
+          {/* founder  Navigation */}
+          {role==="founder"?<>
           <nav className="space-y-1">
             <NavItem
               href="/founder/dashboard"
@@ -78,7 +80,68 @@ const Sidebar = ({ activeTab }) => {
             >
               Analyze Idea →
             </Link>
+          </div></>:<> 
+          <nav className="space-y-1">
+            <NavItem
+              href="/founder/dashboard"
+              icon="⌂"
+              label="Dashboard"
+              active
+            />
+
+            <NavItem href="/founder/Discover Startups" icon="💡" label="Discover startups" />
+
+            <NavItem href="/founder/Saved Startups" icon="✦" label="Saved Startups" />
+
+            <NavItem href="/dashboard/My Investments" icon="◔" label="My Investments" />
+
+            <NavItem
+              href="/founder/Access Requests"
+              icon="💰"
+              label="Access Requests"
+              badge="4"
+            />
+          </nav>
+
+          <div className="my-6 border-t border-slate-200 dark:border-slate-800" />
+
+          <nav className="space-y-1">
+            <NavItem
+              href="/founder/notifications"
+              icon="🔔"
+              label="Notifications"
+            />
+
+            <NavItem href="/founder/settings" icon="⚙" label="Settings" />
+          </nav>
+
+          {/* Bottom CTA */}
+          <div className="mt-auto rounded-xl bg-indigo-50 p-4 dark:bg-indigo-950/40">
+            <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-300">
+              Have another idea?
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-indigo-600 dark:text-indigo-400">
+              Let AI validate your next business idea.
+            </p>
+
+            <Link
+              href="/analyze"
+              className="mt-3 block rounded-lg bg-indigo-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-indigo-700"
+            >
+              Analyze Idea →
+            </Link>
           </div>
+          
+          </>}
+          
+
+
+          {/* investor  Navigation */}
+
+         
+
+
         </div>
       </aside>
     </>
