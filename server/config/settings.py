@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "analysis",
     "matching",
     "connections",
+    "notifications",
 ]
 
 MIDDLEWARE = [
