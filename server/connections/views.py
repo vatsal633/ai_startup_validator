@@ -7,10 +7,10 @@ from django.shortcuts import get_object_or_404
 from .models import ConnectionRequest
 from .serializers import ConnectionRequestSerializer
 from ideas.models import Idea
+from notifications.models import Notification
 
 
 class ConnectionRequestCreateView(generics.CreateAPIView):
-    """Investor requests access to a specific idea's full report."""
     serializer_class = ConnectionRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -26,14 +26,19 @@ class ConnectionRequestCreateView(generics.CreateAPIView):
         if ConnectionRequest.objects.filter(idea=idea, investor=self.request.user).exists():
             raise ValidationError("You have already requested a connection to this idea.")
 
-        serializer.save(idea=idea, investor=self.request.user)
+        connection = serializer.save(idea=idea, investor=self.request.user)
+
+        investor_name = f"{self.request.user.first_name} {self.request.user.last_name}".strip() or self.request.user.email
+        Notification.objects.create(
+            recipient=idea.founder,
+            notification_type=Notification.NotificationType.CONNECTION_REQUESTED,
+            related_idea=idea,
+            related_connection=connection,
+            message=f"{investor_name} is interested in your idea \"{idea.idea[:50]}\"",
+        )
 
 
 class MyConnectionsView(generics.ListAPIView):
-    """
-    Founders see requests made on their ideas.
-    Investors see requests they've made.
-    """
     serializer_class = ConnectionRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -45,7 +50,6 @@ class MyConnectionsView(generics.ListAPIView):
 
 
 class ConnectionRequestRespondView(APIView):
-    """Founder accepts or declines a request on their idea."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, pk, action):
@@ -57,10 +61,23 @@ class ConnectionRequestRespondView(APIView):
         if action == "accept":
             connection.status = ConnectionRequest.Status.ACCEPTED
             connection.accepted_at = timezone.now()
+            notif_type = Notification.NotificationType.CONNECTION_ACCEPTED
+            notif_message = f"Your connection request for \"{connection.idea.idea[:50]}\" was accepted"
         elif action == "decline":
             connection.status = ConnectionRequest.Status.DECLINED
+            notif_type = Notification.NotificationType.CONNECTION_DECLINED
+            notif_message = f"Your connection request for \"{connection.idea.idea[:50]}\" was declined"
         else:
             raise ValidationError("Invalid action.")
 
         connection.save()
+
+        Notification.objects.create(
+            recipient=connection.investor,
+            notification_type=notif_type,
+            related_idea=connection.idea,
+            related_connection=connection,
+            message=notif_message,
+        )
+
         return Response(ConnectionRequestSerializer(connection).data)
