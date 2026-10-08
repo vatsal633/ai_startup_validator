@@ -1,14 +1,20 @@
-from django.shortcuts import render
+from datetime import timedelta
 
-# Create your views here.
+from django.db.models import Count, F
+from django.utils import timezone
 from rest_framework import generics, permissions
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Idea, IdeaReport
-from .serializers import IdeaCreateSerializer, IdeaTeaserSerializer, IdeaDetailSerializer
+
 from analysis.report_generator import generate_report
 from connections.models import ConnectionRequest
+from .models import Idea, IdeaReport, IdeaView
+from .serializers import (
+    IdeaCreateSerializer,
+    IdeaDetailSerializer,
+    IdeaTeaserSerializer,
+    MyIdeaSerializer,          
+)
 
 
 class IdeaCreateView(generics.CreateAPIView):
@@ -50,23 +56,18 @@ class IdeaCreateView(generics.CreateAPIView):
 
 
 class IdeaListView(generics.ListAPIView):
-    queryset = Idea.objects.filter(status="published").select_related("founder").order_by("-created_at")
+    queryset = Idea.objects.filter(status=Idea.Status.PUBLISHED).select_related("founder").order_by("-created_at")
     serializer_class = IdeaTeaserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 
 class IdeaDetailView(generics.RetrieveAPIView):
     queryset = Idea.objects.select_related("founder", "report")
-    serializer_class = IdeaDetailSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-class IdeaDetailView(generics.RetrieveAPIView):
-    queryset = Idea.objects.select_related("founder", "report")
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_serializer_class(self):
+    def retrieve(self, request, *args, **kwargs):
         idea = self.get_object()
-        user = self.request.user
+        user = request.user
 
         is_founder = idea.founder_id == user.id
         is_admin = user.role == "admin"
@@ -74,6 +75,71 @@ class IdeaDetailView(generics.RetrieveAPIView):
             idea=idea, investor=user, status=ConnectionRequest.Status.ACCEPTED
         ).exists()
 
+        # count the view (not the founder's own, not admins), once per viewer per 24h
+        if not is_founder and not is_admin:
+            since = timezone.now() - timedelta(hours=24)
+            if not IdeaView.objects.filter(idea=idea, viewer=user, viewed_at__gte=since).exists():
+                IdeaView.objects.create(idea=idea, viewer=user)
+
         if is_founder or is_admin or has_accepted_connection:
-            return IdeaDetailSerializer
-        return IdeaTeaserSerializer
+            serializer_class = IdeaDetailSerializer
+        else:
+            serializer_class = IdeaTeaserSerializer
+
+        serializer = serializer_class(idea, context=self.get_serializer_context())
+        return Response(serializer.data)
+
+
+class MyIdeasView(generics.ListAPIView):
+    """GET /api/ideas/mine/ : the logged-in founder's ideas, every status."""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MyIdeaSerializer
+
+    def get_queryset(self):
+        return (
+            Idea.objects.filter(founder=self.request.user)
+            .annotate(
+                ai_validation_score=F("report__ai_validation_score"),
+                view_count=Count("views", distinct=True),
+                request_count=Count("connection_requests", distinct=True),
+            )
+            .order_by("-created_at")
+        )
+
+
+def _pct_change(current, previous):
+    if previous == 0:
+        return 100.0 if current > 0 else 0.0
+    return round((current - previous) / previous * 100, 1)
+
+
+class DashboardStatsView(APIView):
+    """GET /api/ideas/dashboard/stats/"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        week_ago = now - timedelta(days=7)
+        d30 = now - timedelta(days=30)
+        d60 = now - timedelta(days=60)
+
+        ideas = Idea.objects.filter(founder=request.user)
+        published = ideas.filter(status=Idea.Status.PUBLISHED)
+        views = IdeaView.objects.filter(idea__founder=request.user)
+        reqs = ConnectionRequest.objects.filter(idea__founder=request.user)
+
+        views_last_30 = views.filter(viewed_at__gte=d30).count()
+        views_prev_30 = views.filter(viewed_at__gte=d60, viewed_at__lt=d30).count()
+
+        return Response({
+            "total_ideas": ideas.count(),
+            "ideas_this_month": ideas.filter(created_at__gte=month_start).count(),
+            "published": published.count(),
+            "published_this_month": published.filter(created_at__gte=month_start).count(),
+            "total_views": views.count(),
+            "views_change_percent": _pct_change(views_last_30, views_prev_30),
+            "investor_requests": reqs.count(),
+            "requests_this_week": reqs.filter(requested_at__gte=week_ago).count(),
+            "pending_requests": reqs.filter(status=ConnectionRequest.Status.PENDING).count(),
+        })

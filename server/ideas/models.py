@@ -29,6 +29,7 @@ class Idea(models.Model):
 
     # founder-submitted fields
     idea = models.TextField()
+    title = models.CharField(max_length=150)
     industry = models.CharField(max_length=150)
     problem = models.TextField()
     solution = models.TextField()
@@ -78,3 +79,12 @@ class IdeaReport(models.Model):
 
     def __str__(self):
         return f"Report for {self.idea.idea[:50]}"
+    
+    
+class IdeaView(models.Model):
+    idea = models.ForeignKey(Idea, on_delete=models.CASCADE, related_name="views")
+    viewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="idea_views")
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["idea", "viewed_at"])]

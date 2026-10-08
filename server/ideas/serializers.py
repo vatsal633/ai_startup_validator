@@ -6,7 +6,7 @@ class IdeaCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Idea
         fields = [
-            "id", "idea", "industry", "problem", "solution", "target_customer",
+            "id", "title", "idea", "industry", "problem", "solution", "target_customer",
             "differentiator", "country", "business_model", "stage",
             "funding_requirement", "competitors",
         ]
@@ -38,7 +38,8 @@ class IdeaTeaserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Idea
-        fields = ["id", "idea", "industry", "country", "stage", "status", "founder_name", "ai_validation_score", "created_at"]
+        fields = ["id", "title", "idea", "industry", "country", "stage",
+                  "status", "founder_name", "ai_validation_score", "created_at"]
 
     def get_founder_name(self, obj):
         return f"{obj.founder.first_name} {obj.founder.last_name}".strip()
@@ -53,7 +54,27 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Idea
         fields = [
-            "id", "idea", "industry", "problem", "solution", "target_customer",
+            "id", "title", "idea", "industry", "problem", "solution", "target_customer",
             "differentiator", "country", "business_model", "stage",
             "funding_requirement", "competitors", "status", "created_at", "report",
         ]
+
+
+class MyIdeaSerializer(serializers.ModelSerializer):
+    # these three come from annotations in MyIdeasView
+    ai_validation_score = serializers.FloatField(read_only=True)
+    view_count = serializers.IntegerField(read_only=True)
+    request_count = serializers.IntegerField(read_only=True)
+    short_description = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Idea
+        fields = [
+            "id", "title", "short_description", "industry", "stage",
+            "funding_requirement", "status", "ai_validation_score",
+            "view_count", "request_count", "created_at",
+        ]
+
+    def get_short_description(self, obj):
+        text = obj.idea or ""
+        return text if len(text) <= 120 else text[:117].rstrip() + "..."
