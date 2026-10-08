@@ -1,8 +1,10 @@
 from datetime import timedelta
 
+from django.db import transaction
 from django.db.models import Count, F
 from django.utils import timezone
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -13,8 +15,44 @@ from .serializers import (
     IdeaCreateSerializer,
     IdeaDetailSerializer,
     IdeaTeaserSerializer,
-    MyIdeaSerializer,          
+    MyIdeaSerializer,          # new, from dashboard_batch_v2.md
 )
+
+
+def build_report(idea):
+    """Run Gemini and create or overwrite the idea's IdeaReport.
+    Used by both submit and edit, so the field mapping lives in one place."""
+    report_data = generate_report(idea)
+    IdeaReport.objects.update_or_create(
+        idea=idea,
+        defaults=dict(
+            executive_summary=report_data.get("executive_summary", ""),
+            problem_validation=report_data.get("problem_validation", ""),
+            solution_evaluation=report_data.get("solution_evaluation", ""),
+            target_customer_analysis=report_data.get("target_customer_analysis", ""),
+            tam=report_data.get("market_size", {}).get("tam", ""),
+            sam=report_data.get("market_size", {}).get("sam", ""),
+            som=report_data.get("market_size", {}).get("som", ""),
+            competitor_analysis=report_data.get("competitor_analysis", ""),
+            competitive_advantage=report_data.get("competitive_advantage", ""),
+            business_model_analysis=report_data.get("business_model_analysis", ""),
+            revenue_potential=report_data.get("revenue_potential", ""),
+            market_trends=report_data.get("market_trends", ""),
+            risk_analysis=report_data.get("risk_analysis", ""),
+            funding_recommendation=report_data.get("funding_recommendation", ""),
+            customer_segments=report_data.get("customer_segments", ""),
+            go_to_market_strategy=report_data.get("go_to_market_strategy", ""),
+            ai_validation_score=report_data.get("ai_validation_score"),
+            recommendations=report_data.get("recommendations", ""),
+            raw_response=report_data,
+        ),
+    )
+
+
+class ReportRegenerationFailed(APIException):
+    status_code = status.HTTP_502_BAD_GATEWAY
+    default_detail = "Could not regenerate the AI report, so no changes were saved. Please try again."
+    default_code = "report_regeneration_failed"
 
 
 class IdeaCreateView(generics.CreateAPIView):
@@ -25,29 +63,7 @@ class IdeaCreateView(generics.CreateAPIView):
         idea = serializer.save(founder=self.request.user)
 
         try:
-            report_data = generate_report(idea)
-            IdeaReport.objects.create(
-                idea=idea,
-                executive_summary=report_data.get("executive_summary", ""),
-                problem_validation=report_data.get("problem_validation", ""),
-                solution_evaluation=report_data.get("solution_evaluation", ""),
-                target_customer_analysis=report_data.get("target_customer_analysis", ""),
-                tam=report_data.get("market_size", {}).get("tam", ""),
-                sam=report_data.get("market_size", {}).get("sam", ""),
-                som=report_data.get("market_size", {}).get("som", ""),
-                competitor_analysis=report_data.get("competitor_analysis", ""),
-                competitive_advantage=report_data.get("competitive_advantage", ""),
-                business_model_analysis=report_data.get("business_model_analysis", ""),
-                revenue_potential=report_data.get("revenue_potential", ""),
-                market_trends=report_data.get("market_trends", ""),
-                risk_analysis=report_data.get("risk_analysis", ""),
-                funding_recommendation=report_data.get("funding_recommendation", ""),
-                customer_segments=report_data.get("customer_segments", ""),
-                go_to_market_strategy=report_data.get("go_to_market_strategy", ""),
-                ai_validation_score=report_data.get("ai_validation_score"),
-                recommendations=report_data.get("recommendations", ""),
-                raw_response=report_data,
-            )
+            build_report(idea)
             idea.status = Idea.Status.PUBLISHED
         except Exception as e:
             idea.status = Idea.Status.FAILED
@@ -61,6 +77,10 @@ class IdeaListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
 
+# NOTE: your file defined IdeaDetailView twice; the second silently replaced
+# the first. This is a single merged version. It also fixes get_object()
+# being called several times per request (it used to run inside
+# get_serializer_class), and records the view.
 class IdeaDetailView(generics.RetrieveAPIView):
     queryset = Idea.objects.select_related("founder", "report")
     permission_classes = [permissions.IsAuthenticated]
@@ -88,6 +108,44 @@ class IdeaDetailView(generics.RetrieveAPIView):
 
         serializer = serializer_class(idea, context=self.get_serializer_context())
         return Response(serializer.data)
+
+    def patch(self, request, *args, **kwargs):
+        """PATCH /api/ideas/<id>/ : founder edits their own idea.
+        Any change other than the title regenerates the AI report. If
+        regeneration fails, the whole edit is rolled back."""
+        idea = self.get_object()
+        if idea.founder_id != request.user.id:
+            raise PermissionDenied("You can only edit your own ideas.")
+
+        serializer = IdeaCreateSerializer(idea, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        changed = {f for f, v in serializer.validated_data.items() if getattr(idea, f) != v}
+        if not changed:
+            return Response(IdeaDetailSerializer(idea).data)
+
+        try:
+            with transaction.atomic():
+                idea = serializer.save()
+                if changed - {"title"}:
+                    build_report(idea)
+                    idea.status = Idea.Status.PUBLISHED
+                    idea.save(update_fields=["status"])
+        except Exception as e:
+            print(f"Report regeneration failed for idea {idea.id}: {e}")
+            raise ReportRegenerationFailed()
+
+        idea = self.get_queryset().get(pk=idea.pk)  # refresh with the new report
+        return Response(IdeaDetailSerializer(idea).data)
+
+    def delete(self, request, *args, **kwargs):
+        """DELETE /api/ideas/<id>/ : founder deletes their own idea.
+        Cascades to its report, views and connection requests."""
+        idea = self.get_object()
+        if idea.founder_id != request.user.id:
+            raise PermissionDenied("You can only delete your own ideas.")
+        idea.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class MyIdeasView(generics.ListAPIView):
