@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ui/themeToggle";
+import { confirmPasswordReset } from "@/lib/endpoints";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const uid = searchParams.get("uid");
@@ -33,20 +34,7 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/password-reset/confirm/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ uid, token, new_password: password }),
-        }
-      );
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const firstError = Object.values(data)[0]?.[0] || "This reset link is invalid or has expired.";
-        throw new Error(firstError);
-      }
+      await confirmPasswordReset({ uid, token, newPassword: password });
 
       setMessage("Password reset successfully. Redirecting to login...");
       setTimeout(() => router.push("/login"), 2000);
@@ -139,5 +127,19 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600 dark:border-slate-700" />
+        </main>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

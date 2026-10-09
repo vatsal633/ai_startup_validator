@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ui/themeToggle";
-import { signIn ,login} from "../apis/auth.api";
+import { registerAndLogin } from "@/lib/endpoints";
+import { homePathForRole } from "@/lib/auth";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -28,28 +29,8 @@ export default function SignInPage() {
 
     setLoading(true);
     try {
-      const formData = {
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        password,
-        role,
-      };
-
-      
-      const res = await signIn(formData)
-      console.log(res)
-
-      const loginRes = await login({email,password})
-
-      localStorage.setItem("access_token", loginRes.access);
-      localStorage.setItem("refresh_token", loginRes.refresh);
-
-      if (role === "founder") {
-        router.push("/founder/dashboard");
-      } else {
-        router.push("/investor/dashboard");
-      }
+      await registerAndLogin({ firstName, lastName, email, password, role });
+      router.replace(homePathForRole(role));
     } catch (err) {
       setError(err.message);
     } finally {
