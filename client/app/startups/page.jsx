@@ -1,323 +1,232 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import StartupCard from "../components/StartupCard";
+import { LoaderCircle, Search } from "lucide-react";
 import ThemeToggle from "../components/ui/themeToggle";
-import {Search} from "lucide-react"
+import { listIdeas } from "@/lib/endpoints";
+import { INDUSTRIES, STAGES, formatFunding, stageLabel } from "@/lib/ideaOptions";
+import { relativeTime } from "@/lib/relativeTime";
 
-const startups = [
-  {
-    id: 1,
-    name: "FarmSense AI",
-    tagline: "AI-powered crop disease detection for farmers",
-    description:
-      "A mobile platform that helps farmers detect crop diseases using AI-powered image analysis and provides actionable treatment recommendations.",
-    category: "AgriTech",
-    stage: "MVP",
-    funding: "₹25 Lakh",
-    score: 87,
-    risk: "Medium",
-    founders: "2 Founders",
-    location: "Pune, India",
-    tags: ["AI", "Agriculture", "Computer Vision"],
-    trending: true,
-  },
-  {
-    id: 2,
-    name: "SkillBridge",
-    tagline: "Connecting students with industry-ready skills",
-    description:
-      "An AI-powered platform that identifies skill gaps in students and creates personalized learning paths based on their career goals.",
-    category: "EdTech",
-    stage: "Early Stage",
-    funding: "₹40 Lakh",
-    score: 82,
-    risk: "Low",
-    founders: "3 Founders",
-    location: "Bangalore, India",
-    tags: ["AI", "Education", "Career"],
-    trending: true,
-  },
-  {
-    id: 3,
-    name: "MediTrack",
-    tagline: "Simplifying medication management",
-    description:
-      "A smart healthcare platform that helps patients manage prescriptions, medication schedules and doctor appointments.",
-    category: "HealthTech",
-    stage: "Prototype",
-    funding: "₹15 Lakh",
-    score: 76,
-    risk: "Medium",
-    founders: "2 Founders",
-    location: "Mumbai, India",
-    tags: ["Healthcare", "Mobile", "SaaS"],
-    trending: false,
-  },
-  {
-    id: 4,
-    name: "GreenCart",
-    tagline: "Making sustainable shopping easier",
-    description:
-      "A marketplace that connects consumers with sustainable and locally produced products while helping small businesses reach new customers.",
-    category: "E-Commerce",
-    stage: "MVP",
-    funding: "₹30 Lakh",
-    score: 79,
-    risk: "Medium",
-    founders: "3 Founders",
-    location: "Delhi, India",
-    tags: ["E-Commerce", "Sustainability", "Marketplace"],
-    trending: false,
-  },
-  {
-    id: 5,
-    name: "FinMate",
-    tagline: "Your AI personal finance companion",
-    description:
-      "An AI-powered personal finance assistant that analyzes spending patterns and provides personalized budgeting recommendations.",
-    category: "FinTech",
-    stage: "MVP",
-    funding: "₹50 Lakh",
-    score: 91,
-    risk: "Low",
-    founders: "2 Founders",
-    location: "Hyderabad, India",
-    tags: ["FinTech", "AI", "Finance"],
-    trending: true,
-  },
-  {
-    id: 6,
-    name: "LocalChef",
-    tagline: "Discover homemade food around you",
-    description:
-      "A platform connecting home chefs with customers looking for authentic homemade meals in their neighborhood.",
-    category: "FoodTech",
-    stage: "Idea",
-    funding: "₹10 Lakh",
-    score: 71,
-    risk: "High",
-    founders: "1 Founder",
-    location: "Ahmedabad, India",
-    tags: ["Food", "Marketplace", "Local"],
-    trending: false,
-  },
+const ORDERINGS = [
+  { value: "newest", label: "Newest first" },
+  { value: "score", label: "Highest AI score" },
+  { value: "funding", label: "Largest raise" },
+  { value: "oldest", label: "Oldest first" },
 ];
 
-const categories = [
-  "All",
-  "AI",
-  "FinTech",
-  "HealthTech",
-  "EdTech",
-  "AgriTech",
-  "E-Commerce",
-];
+function StartupCard({ idea }) {
+  return (
+    <Link
+      href={`/founder/myideas`}
+      onClick={(event) => event.preventDefault()}
+      className="block cursor-default rounded-2xl border border-slate-200 bg-white p-5 transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-lg font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+          {(idea.title || "?").charAt(0).toUpperCase()}
+        </div>
 
-export default function StartupPage() {
-  const [startupData, setStartupData] = useState(startups);
-  const [searchItem, SetsearchItem] = useState("");
+        {typeof idea.ai_validation_score === "number" && (
+          <div className="text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              AI Score
+            </p>
+            <p className="text-xl font-bold text-indigo-600">{idea.ai_validation_score}</p>
+          </div>
+        )}
+      </div>
 
-  const handleSearch = () => {
-    if(searchItem==="") return;
+      <h3 className="mt-4 font-bold">{idea.title}</h3>
+      <p className="mt-1 line-clamp-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+        {idea.idea}
+      </p>
 
-    const filteredItems = startupData.filter((item)=>(
-      item.name.toLowerCase().includes(searchItem.toLowerCase())
-    ))
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          {idea.industry}
+        </span>
+        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          {stageLabel(idea.stage)}
+        </span>
+        <span className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          {idea.country}
+        </span>
+      </div>
 
-    console.log(filteredItems);
-    
-  };
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-400 dark:border-slate-800">
+        <span>{idea.founder_name || "Independent founder"}</span>
+        <span>{formatFunding(idea.funding_requirement)}</span>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-400">
+        Listed {relativeTime(idea.created_at)}
+      </p>
+    </Link>
+  );
+}
+
+export default function StartupsPage() {
+  const [filters, setFilters] = useState({
+    q: "",
+    industry: "",
+    stage: "",
+    min_score: "",
+    ordering: "newest",
+  });
+  const [ideas, setIdeas] = useState([]);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const update = (field, value) => setFilters((prev) => ({ ...prev, [field]: value }));
+
+  const load = useCallback(async (active) => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await listIdeas(active);
+      setIdeas(data?.results ?? []);
+      setCount(data?.count ?? 0);
+    } catch (err) {
+      setError(err.message);
+      setIdeas([]);
+      setCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // debounced so typing in the search box doesn't hammer the API
+  useEffect(() => {
+    const timer = setTimeout(() => load(filters), 300);
+    return () => clearTimeout(timer);
+  }, [load, filters]);
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">
-      {/* ================= NAVBAR ================= */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur transition-colors dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-6 lg:px-8">
-          {/* Logo */}
-          <Link href="/" className="text-2xl font-bold tracking-tight">
-            Venture
-            <span className="text-indigo-600 dark:text-indigo-400">AI</span>
+      <div className="mx-auto max-w-7xl px-6 py-6 lg:px-8 lg:py-8">
+        <nav className="flex items-center justify-between rounded-full border border-slate-200/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/80 sm:px-6">
+          <Link href="/" className="text-xl font-bold tracking-tight">
+            Venture<span className="text-indigo-600 dark:text-indigo-400">AI</span>
           </Link>
-
-          {/* Navigation */}
-          <div className="hidden items-center gap-8 md:flex">
-            <Link
-              href="/"
-              className="text-sm text-slate-500 transition hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
-            >
-              Home
-            </Link>
-
-            <Link
-              href="/startup"
-              className="text-sm font-semibold text-indigo-600 dark:text-indigo-400"
-            >
-              Explore Startups
-            </Link>
-
-            <Link
-              href="/analyze"
-              className="text-sm text-slate-500 transition hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
-            >
-              Analyze Idea
-            </Link>
-          </div>
-
-          {/* Auth */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Link
               href="/login"
-              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 sm:block"
+              className="text-sm font-medium text-slate-600 transition hover:text-indigo-600 dark:text-slate-300"
             >
-              Login
+              Sign in
             </Link>
-
-            <Link
-              href="/register"
-              className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700"
-            >
-              Get Started
-            </Link>
-
             <ThemeToggle />
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* ================= HEADER ================= */}
-      <section className="border-b border-slate-200 bg-white transition-colors dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
-          <div className="max-w-3xl">
-            {/* Badge */}
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
-              ✦ Startup Discovery
-            </div>
+        <section className="mt-10">
+          <p className="text-sm font-semibold text-indigo-600">Marketplace</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+            Discover validated startups
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Every listing here has been through an AI validation report. Sign in as an
+            investor to request the full details from a founder.
+          </p>
+        </section>
 
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-              Discover the next
-              <span className="text-indigo-600 dark:text-indigo-400">
-                {" "}
-                big idea.
-              </span>
-            </h1>
+        <section className="mt-8 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:grid-cols-2 lg:grid-cols-5">
+          <label className="relative lg:col-span-2">
+            <span className="sr-only">Search startups</span>
+            <Search
+              size={15}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="search"
+              value={filters.q}
+              onChange={(event) => update("q", event.target.value)}
+              placeholder="Search by name, industry or problem"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white dark:border-slate-700 dark:bg-slate-950"
+            />
+          </label>
 
-            <p className="mt-5 text-lg leading-8 text-slate-500 dark:text-slate-400">
-              Explore AI-validated startup ideas from founders around the world
-              and discover opportunities worth investing in.
-            </p>
-          </div>
-
-          {/* ================= SEARCH ================= */}
-          <div className="mt-10 flex flex-col gap-3 md:flex-row">
-            <div className="relative flex-1">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                🔍
-              </span>
-
-              <input
-                type="text"
-                placeholder="Search startups, industries or technologies..."
-                value={searchItem}
-                onChange={(e) => {
-                  SetsearchItem(e.target.value);
-                }}
-                className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-500/20"
-              />
-
-              
-            </div>
-
-            <button className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" onClick={handleSearch}>
-              {<Search/>}
-            </button>
-
-            <button className="h-12 rounded-xl border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-              ⚙ Filters
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= MAIN CONTENT ================= */}
-      <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
-        {/* CATEGORY FILTERS */}
-        <div className="mb-10 flex gap-2 overflow-x-auto pb-2">
-          {categories.map((category, index) => (
-            <button
-              key={category}
-              className={`whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium transition ${
-                index === 0
-                  ? "bg-slate-900 text-white dark:bg-indigo-600"
-                  : "border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-indigo-500 dark:hover:text-indigo-400"
-              }`}
+          <label>
+            <span className="sr-only">Industry</span>
+            <select
+              value={filters.industry}
+              onChange={(event) => update("industry", event.target.value)}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
             >
-              {category}
-            </button>
-          ))}
-        </div>
+              <option value="">All industries</option>
+              {INDUSTRIES.map((industry) => (
+                <option key={industry} value={industry}>
+                  {industry}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        {/* TOP BAR */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Featured Startups
-            </h2>
+          <label>
+            <span className="sr-only">Stage</span>
+            <select
+              value={filters.stage}
+              onChange={(event) => update("stage", event.target.value)}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+            >
+              <option value="">Any stage</option>
+              {STAGES.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
 
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              126 startups discovered
-            </p>
-          </div>
+          <label>
+            <span className="sr-only">Sort by</span>
+            <select
+              value={filters.ordering}
+              onChange={(event) => update("ordering", event.target.value)}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-950"
+            >
+              {ORDERINGS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </section>
 
-          <select className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none transition focus:border-indigo-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-            <option>Recommended</option>
-            <option>Highest Score</option>
-            <option>Newest</option>
-            <option>Funding Required</option>
-          </select>
-        </div>
-
-        {/* ================= STARTUP FEED ================= */}
-        <div className="space-y-5">
-          {startups.map((startup) => (
-            <StartupCard key={startup.id} startup={startup} />
-          ))}
-        </div>
-      </section>
-
-      {/* ================= CTA ================= */}
-      <section className="border-t border-slate-200 bg-white px-6 py-20 text-center transition-colors dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
-          Have a startup idea?
-        </h2>
-
-        <p className="mx-auto mt-3 max-w-lg text-slate-500 dark:text-slate-400">
-          Validate your idea with AI and get discovered by potential investors.
+        <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
+          {loading ? "Loading…" : `${count} ${count === 1 ? "startup" : "startups"} listed`}
         </p>
 
-        <Link
-          href="/analyze"
-          className="mt-7 inline-block rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
-        >
-          Analyze Your Idea →
-        </Link>
-      </section>
-
-      {/* ================= FOOTER ================= */}
-      <footer className="border-t border-slate-200 bg-white px-6 py-10 transition-colors dark:border-slate-800 dark:bg-slate-900">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="font-bold text-slate-900 dark:text-white">
-            Venture
-            <span className="text-indigo-600 dark:text-indigo-400">AI</span>
+        {error && (
+          <div
+            role="alert"
+            className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+          >
+            {error}
           </div>
+        )}
 
-          <p className="text-sm text-slate-400">
-            AI-powered startup validation & investor discovery
-          </p>
-
-          <p className="text-xs text-slate-400">© 2026 VentureAI</p>
-        </div>
-      </footer>
+        {loading ? (
+          <div className="mt-4 flex items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-20 dark:border-slate-700 dark:bg-slate-900">
+            <LoaderCircle size={24} className="animate-spin text-indigo-600" />
+          </div>
+        ) : ideas.length > 0 ? (
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {ideas.map((idea) => (
+              <StartupCard key={idea.id} idea={idea} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900">
+            <p className="font-semibold">No startups match those filters</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              Try widening your search.
+            </p>
+          </div>
+        )}
+      </div>
     </main>
   );
 }

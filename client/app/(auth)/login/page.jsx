@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { jwtDecode } from "jwt-decode";
 import ThemeToggle from "@/app/components/ui/themeToggle";
-import { login } from "../apis/auth.api";
+import { login } from "@/lib/endpoints";
+import { getRole, homePathForRole } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,48 +15,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
 const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      }
-    );
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      const message = data.detail || "Something went wrong. Please try again.";
-      throw new Error(message);
+    try {
+      // login() stores both tokens, so the role is readable straight after
+      await login({ email, password });
+      router.replace(homePathForRole(getRole()));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    const data = await res.json();
-    localStorage.setItem("access_token", data.access);
-    localStorage.setItem("refresh_token", data.refresh);
-
-    const decoded = jwtDecode(data.access);
-    const role = decoded.role;
-
-    if (role === "founder") {
-      router.push("/founder/dashboard");
-    } else if (role === "investor") {
-      router.push("/investor/dashboard");
-    } else if (role === "admin") {
-      router.push("/admin/dashboard");
-    } else {
-      router.push("/");
-    }
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-slate-950 dark:text-white">

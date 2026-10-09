@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ui/themeToggle";
+import { requestPasswordReset } from "@/lib/endpoints";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -17,11 +18,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/password-reset/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      await requestPasswordReset(email);
 
       // always show success — regardless of whether the email exists (security choice from the backend)
       setMessage(`If an account exists for ${email}, a reset link has been sent.`);
