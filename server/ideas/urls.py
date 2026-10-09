@@ -5,6 +5,7 @@ from .views import (
     IdeaDetailView,
     IdeaListView,
     IdeaPublishView,
+    IdeaRetryAnalysisView,
     MyIdeasView,
 )
 
@@ -15,4 +16,5 @@ urlpatterns = [
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard-stats"),
     path("<int:pk>/", IdeaDetailView.as_view(), name="idea-detail"),
     path("<int:pk>/publish/", IdeaPublishView.as_view(), name="idea-publish"),
+    path("<int:pk>/retry/", IdeaRetryAnalysisView.as_view(), name="idea-retry"),
 ]

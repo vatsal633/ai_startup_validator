@@ -19,6 +19,8 @@ class ConnectionRequest(models.Model):
 
     class Meta:
         unique_together = ("idea", "investor")  # one request per investor per idea
+        # paginating an unordered queryset gives inconsistent pages
+        ordering = ["-requested_at"]
 
     def __str__(self):
         return f"{self.investor.email} -> {self.idea.idea[:40]} ({self.status})"

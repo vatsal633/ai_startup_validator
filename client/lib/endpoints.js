@@ -73,6 +73,9 @@ export const publishIdea = (id) => apiPost(`/api/ideas/${id}/publish/`);
 
 export const unpublishIdea = (id) => apiDelete(`/api/ideas/${id}/publish/`);
 
+/** Re-run a failed analysis. The idea goes back to "processing". */
+export const retryAnalysis = (id) => apiPost(`/api/ideas/${id}/retry/`);
+
 export const listMyIdeas = (filters = {}) =>
   apiGet(`/api/ideas/mine/${queryString(filters)}`);
 

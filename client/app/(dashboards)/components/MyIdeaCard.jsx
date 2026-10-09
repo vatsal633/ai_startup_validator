@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Eye, LoaderCircle, Trash2, Users } from "lucide-react";
+import { Eye, LoaderCircle, RefreshCw, Trash2, Users } from "lucide-react";
 import {
   STATUS_STYLES,
   formatFunding,
   stageLabel,
   statusLabel,
 } from "@/lib/ideaOptions";
-import { deleteIdea, publishIdea, unpublishIdea } from "@/lib/endpoints";
+import { deleteIdea, publishIdea, retryAnalysis, unpublishIdea } from "@/lib/endpoints";
 
 /**
  * One of the founder's own ideas, with the publish controls.
@@ -92,6 +92,29 @@ export default function MyIdeaCard({ idea, onChanged }) {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {idea.status === "processing" && (
+            <span className="inline-flex items-center gap-2 rounded-lg bg-sky-50 px-4 py-2 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
+              <LoaderCircle size={13} className="animate-spin" />
+              Analyzing…
+            </span>
+          )}
+
+          {idea.status === "failed" && (
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() => run("retry", () => retryAnalysis(idea.id))}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:hover:bg-slate-800"
+            >
+              {busy === "retry" ? (
+                <LoaderCircle size={13} className="animate-spin" />
+              ) : (
+                <RefreshCw size={13} />
+              )}
+              Retry analysis
+            </button>
+          )}
+
           {idea.status === "draft" && (
             <button
               type="button"
@@ -116,7 +139,7 @@ export default function MyIdeaCard({ idea, onChanged }) {
             </button>
           )}
 
-          {confirmingDelete ? (
+          {idea.status === "processing" ? null : confirmingDelete ? (
             <span className="flex items-center gap-1">
               <button
                 type="button"
@@ -152,6 +175,7 @@ export default function MyIdeaCard({ idea, onChanged }) {
       {idea.status === "failed" && (
         <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
           The AI analysis failed for this idea, so it can&apos;t be published yet.
+          Use <strong>Retry analysis</strong> to run it again.
         </p>
       )}
 
