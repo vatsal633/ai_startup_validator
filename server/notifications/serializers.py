@@ -3,7 +3,7 @@ from .models import Notification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
-    idea_title = serializers.CharField(source="related_idea.idea", read_only=True)
+    idea_title = serializers.CharField(source="related_idea.title", read_only=True)
 
     class Meta:
         model = Notification

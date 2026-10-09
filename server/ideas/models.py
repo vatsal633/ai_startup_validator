@@ -19,9 +19,10 @@ class Idea(models.Model):
         REVENUE = "revenue", "Generating revenue"
 
     class Status(models.TextChoices):
-        PROCESSING = "processing", "Processing"
-        PUBLISHED = "published", "Published"
-        FAILED = "failed", "Failed"
+        PROCESSING = "processing", "Processing"   # AI report is being generated
+        DRAFT = "draft", "Draft"                 # analyzed, private to the founder
+        PUBLISHED = "published", "Published"     # visible in the marketplace
+        FAILED = "failed", "Failed"              # report generation failed
 
     founder = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ideas"
@@ -42,10 +43,14 @@ class Idea(models.Model):
     competitors = models.TextField(blank=True)
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PROCESSING)
+    published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [models.Index(fields=["status", "-created_at"])]
+
     def __str__(self):
-        return f"{self.idea[:50]} ({self.founder.email})"
+        return f"{self.title or self.idea[:50]} ({self.founder.email})"
 
 
 class IdeaReport(models.Model):

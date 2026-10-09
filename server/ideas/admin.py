@@ -8,9 +8,9 @@ class IdeaReportInline(admin.StackedInline):
 
 
 class IdeaAdmin(admin.ModelAdmin):
-    list_display = ("idea", "founder", "industry", "stage", "status", "created_at")
+    list_display = ("title", "founder", "industry", "stage", "status", "published_at", "created_at")
     list_filter = ("status", "stage", "business_model")
-    search_fields = ("idea", "founder__email")
+    search_fields = ("title", "idea", "founder__email")
     inlines = [IdeaReportInline]
 
 

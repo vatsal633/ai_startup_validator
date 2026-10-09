@@ -159,6 +159,28 @@ REST_FRAMEWORK = {
         "user": "1000/day",
         "anon": "100/day",
     },
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 12,
+}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {"format": "{levelname} {asctime} {name} {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "verbose"},
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        # our own apps, so a failed Gemini call shows a full traceback
+        "accounts": {"level": "INFO"},
+        "ideas": {"level": "INFO"},
+        "analysis": {"level": "INFO"},
+        "connections": {"level": "INFO"},
+        "notifications": {"level": "INFO"},
+    },
 }
 
 

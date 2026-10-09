@@ -26,10 +26,19 @@ class User(AbstractUser):
         INVESTOR = "investor", "Investor"
         ADMIN = "admin", "Admin"
 
-    username = models.TextField(blank=False,null=False)  # not used — frontend never collects this
+    # AbstractUser's username is unused — email is the login identifier.
+    username = None
+
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.FOUNDER)
-    bio = models.TextField(blank=True, null=True)
+
+    # profile fields, all optional — surfaced by the settings screen
+    bio = models.TextField(blank=True, default="")
+    phone = models.CharField(max_length=20, blank=True, default="")
+    location = models.CharField(max_length=120, blank=True, default="")
+    linkedin = models.URLField(blank=True, default="")
+    website = models.URLField(blank=True, default="")
+
     is_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
