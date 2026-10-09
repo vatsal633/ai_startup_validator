@@ -39,13 +39,15 @@ class IdeaTeaserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Idea
         fields = ["id", "title", "idea", "industry", "country", "stage",
-                  "status", "founder_name", "ai_validation_score", "created_at"]
+                  "business_model", "funding_requirement", "status",
+                  "founder_name", "ai_validation_score", "created_at"]
 
     def get_founder_name(self, obj):
         return f"{obj.founder.first_name} {obj.founder.last_name}".strip()
 
     def get_ai_validation_score(self, obj):
-        return getattr(obj.report, "ai_validation_score", None) if hasattr(obj, "report") else None
+        report = getattr(obj, "report", None)
+        return report.ai_validation_score if report else None
 
 
 class IdeaDetailSerializer(serializers.ModelSerializer):
@@ -56,7 +58,8 @@ class IdeaDetailSerializer(serializers.ModelSerializer):
         fields = [
             "id", "title", "idea", "industry", "problem", "solution", "target_customer",
             "differentiator", "country", "business_model", "stage",
-            "funding_requirement", "competitors", "status", "created_at", "report",
+            "funding_requirement", "competitors", "status", "published_at",
+            "created_at", "report",
         ]
 
 
@@ -72,7 +75,7 @@ class MyIdeaSerializer(serializers.ModelSerializer):
         fields = [
             "id", "title", "short_description", "industry", "stage",
             "funding_requirement", "status", "ai_validation_score",
-            "view_count", "request_count", "created_at",
+            "view_count", "request_count", "published_at", "created_at",
         ]
 
     def get_short_description(self, obj):

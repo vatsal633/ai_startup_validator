@@ -8,7 +8,7 @@ class CustomUserAdmin(UserAdmin):
     list_display = ("email", "first_name", "last_name", "role", "is_verified", "is_staff")
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Personal Info", {"fields": ("first_name", "last_name", "bio")}),
+        ("Personal Info", {"fields": ("first_name", "last_name", "bio", "phone", "location", "linkedin", "website")}),
         ("Role & Status", {"fields": ("role", "is_verified", "is_active", "is_staff", "is_superuser")}),
         ("Permissions", {"fields": ("groups", "user_permissions")}),
     )

@@ -1,10 +1,12 @@
+import logging
 from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Count, F
+from django.db.models import Count, F, Q
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
+from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,8 +17,10 @@ from .serializers import (
     IdeaCreateSerializer,
     IdeaDetailSerializer,
     IdeaTeaserSerializer,
-    MyIdeaSerializer,          # new, from dashboard_batch_v2.md
+    MyIdeaSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def build_report(idea):
@@ -60,27 +64,78 @@ class IdeaCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        if self.request.user.role != "founder":
+            raise PermissionDenied("Only founders can submit ideas.")
+
         idea = serializer.save(founder=self.request.user)
 
         try:
             build_report(idea)
-            idea.status = Idea.Status.PUBLISHED
-        except Exception as e:
+            # analyzed but not public — the founder reviews the report, then publishes
+            idea.status = Idea.Status.DRAFT
+        except Exception:
             idea.status = Idea.Status.FAILED
-            print(f"Report generation failed for idea {idea.id}: {e}")
-        idea.save()
+            logger.exception("Report generation failed for idea %s", idea.id)
+        idea.save(update_fields=["status"])
 
 
 class IdeaListView(generics.ListAPIView):
-    queryset = Idea.objects.filter(status=Idea.Status.PUBLISHED).select_related("founder").order_by("-created_at")
+    """GET /api/ideas/ : the public marketplace. Readable without signing in —
+    it only ever exposes the teaser serializer."""
     serializer_class = IdeaTeaserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
+
+    # whitelist, so ?ordering= cannot be pointed at arbitrary columns
+    ORDERING_FIELDS = {
+        "newest": "-created_at",
+        "oldest": "created_at",
+        "score": "-report__ai_validation_score",
+        "funding": "-funding_requirement",
+    }
+
+    def get_queryset(self):
+        params = self.request.query_params
+        qs = (
+            Idea.objects.filter(status=Idea.Status.PUBLISHED)
+            .select_related("founder", "report")
+        )
+
+        search = params.get("q", "").strip()
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(idea__icontains=search)
+                | Q(industry__icontains=search)
+                | Q(problem__icontains=search)
+            )
+
+        for param, lookup in (
+            ("industry", "industry__iexact"),
+            ("country", "country__iexact"),
+            ("stage", "stage"),
+            ("business_model", "business_model"),
+        ):
+            value = params.get(param, "").strip()
+            if value:
+                qs = qs.filter(**{lookup: value})
+
+        for param, lookup in (
+            ("min_score", "report__ai_validation_score__gte"),
+            ("max_score", "report__ai_validation_score__lte"),
+            ("min_funding", "funding_requirement__gte"),
+            ("max_funding", "funding_requirement__lte"),
+        ):
+            value = params.get(param, "").strip()
+            if value:
+                try:
+                    qs = qs.filter(**{lookup: float(value)})
+                except ValueError:
+                    pass  # ignore an unparseable filter rather than 500
+
+        ordering = self.ORDERING_FIELDS.get(params.get("ordering"), "-created_at")
+        return qs.order_by(ordering)
 
 
-# NOTE: your file defined IdeaDetailView twice; the second silently replaced
-# the first. This is a single merged version. It also fixes get_object()
-# being called several times per request (it used to run inside
-# get_serializer_class), and records the view.
 class IdeaDetailView(generics.RetrieveAPIView):
     queryset = Idea.objects.select_related("founder", "report")
     permission_classes = [permissions.IsAuthenticated]
@@ -91,6 +146,11 @@ class IdeaDetailView(generics.RetrieveAPIView):
 
         is_founder = idea.founder_id == user.id
         is_admin = user.role == "admin"
+
+        # an unpublished idea is visible only to its founder and to admins
+        if idea.status != Idea.Status.PUBLISHED and not (is_founder or is_admin):
+            raise PermissionDenied("This idea is not published.")
+
         has_accepted_connection = ConnectionRequest.objects.filter(
             idea=idea, investor=user, status=ConnectionRequest.Status.ACCEPTED
         ).exists()
@@ -129,10 +189,13 @@ class IdeaDetailView(generics.RetrieveAPIView):
                 idea = serializer.save()
                 if changed - {"title"}:
                     build_report(idea)
-                    idea.status = Idea.Status.PUBLISHED
-                    idea.save(update_fields=["status"])
-        except Exception as e:
-            print(f"Report regeneration failed for idea {idea.id}: {e}")
+                    # a re-analyzed idea drops out of the marketplace until the
+                    # founder reviews the new report and republishes
+                    idea.status = Idea.Status.DRAFT
+                    idea.published_at = None
+                    idea.save(update_fields=["status", "published_at"])
+        except Exception:
+            logger.exception("Report regeneration failed for idea %s", idea.id)
             raise ReportRegenerationFailed()
 
         idea = self.get_queryset().get(pk=idea.pk)  # refresh with the new report
@@ -148,21 +211,74 @@ class IdeaDetailView(generics.RetrieveAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class IdeaPublishView(APIView):
+    """POST   /api/ideas/<id>/publish/ : put the idea on the marketplace.
+    DELETE /api/ideas/<id>/publish/ : take it back off."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_idea(self, request, pk):
+        idea = get_object_or_404(Idea.objects.select_related("report"), pk=pk)
+        if idea.founder_id != request.user.id:
+            raise PermissionDenied("You can only publish your own ideas.")
+        return idea
+
+    def post(self, request, pk):
+        idea = self.get_idea(request, pk)
+
+        if idea.status == Idea.Status.PUBLISHED:
+            return Response(IdeaDetailSerializer(idea).data)
+
+        # publishing only means something once there is a report to show
+        if idea.status != Idea.Status.DRAFT or not hasattr(idea, "report"):
+            raise PermissionDenied(
+                "Only an analyzed idea can be published. Re-run the analysis first."
+            )
+
+        idea.status = Idea.Status.PUBLISHED
+        idea.published_at = timezone.now()
+        idea.save(update_fields=["status", "published_at"])
+        return Response(IdeaDetailSerializer(idea).data)
+
+    def delete(self, request, pk):
+        idea = self.get_idea(request, pk)
+
+        if idea.status != Idea.Status.PUBLISHED:
+            raise PermissionDenied("This idea is not published.")
+
+        idea.status = Idea.Status.DRAFT
+        idea.published_at = None
+        idea.save(update_fields=["status", "published_at"])
+        return Response(IdeaDetailSerializer(idea).data)
+
+
 class MyIdeasView(generics.ListAPIView):
     """GET /api/ideas/mine/ : the logged-in founder's ideas, every status."""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = MyIdeaSerializer
 
     def get_queryset(self):
-        return (
+        qs = (
             Idea.objects.filter(founder=self.request.user)
             .annotate(
                 ai_validation_score=F("report__ai_validation_score"),
                 view_count=Count("views", distinct=True),
                 request_count=Count("connection_requests", distinct=True),
             )
-            .order_by("-created_at")
         )
+
+        status_filter = self.request.query_params.get("status", "").strip()
+        if status_filter in Idea.Status.values:
+            qs = qs.filter(status=status_filter)
+
+        search = self.request.query_params.get("q", "").strip()
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(idea__icontains=search)
+                | Q(industry__icontains=search)
+            )
+
+        return qs.order_by("-created_at")
 
 
 def _pct_change(current, previous):
@@ -195,6 +311,7 @@ class DashboardStatsView(APIView):
             "ideas_this_month": ideas.filter(created_at__gte=month_start).count(),
             "published": published.count(),
             "published_this_month": published.filter(created_at__gte=month_start).count(),
+            "drafts": ideas.filter(status=Idea.Status.DRAFT).count(),
             "total_views": views.count(),
             "views_change_percent": _pct_change(views_last_30, views_prev_30),
             "investor_requests": reqs.count(),

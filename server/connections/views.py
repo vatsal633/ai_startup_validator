@@ -37,7 +37,7 @@ class ConnectionRequestCreateView(generics.CreateAPIView):
             notification_type=Notification.NotificationType.CONNECTION_REQUESTED,
             related_idea=idea,
             related_connection=connection,
-            message=f"{investor_name} is interested in your idea \"{idea.idea[:50]}\"",
+            message=f"{investor_name} is interested in your idea \"{idea.title}\"",
         )
 
 
@@ -69,11 +69,11 @@ class ConnectionRequestRespondView(APIView):
             connection.status = ConnectionRequest.Status.ACCEPTED
             connection.accepted_at = timezone.now()
             notif_type = Notification.NotificationType.CONNECTION_ACCEPTED
-            notif_message = f"Your connection request for \"{connection.idea.idea[:50]}\" was accepted"
+            notif_message = f"Your connection request for \"{connection.idea.title}\" was accepted"
         elif action == "decline":
             connection.status = ConnectionRequest.Status.DECLINED
             notif_type = Notification.NotificationType.CONNECTION_DECLINED
-            notif_message = f"Your connection request for \"{connection.idea.idea[:50]}\" was declined"
+            notif_message = f"Your connection request for \"{connection.idea.title}\" was declined"
         else:
             raise ValidationError("Invalid action.")
 

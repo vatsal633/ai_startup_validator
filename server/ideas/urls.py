@@ -1,10 +1,11 @@
 from django.urls import path
 from .views import (
-    IdeaCreateView,
-    IdeaListView,
-    IdeaDetailView,
-    MyIdeasView,
     DashboardStatsView,
+    IdeaCreateView,
+    IdeaDetailView,
+    IdeaListView,
+    IdeaPublishView,
+    MyIdeasView,
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path("mine/", MyIdeasView.as_view(), name="idea-mine"),
     path("dashboard/stats/", DashboardStatsView.as_view(), name="dashboard-stats"),
     path("<int:pk>/", IdeaDetailView.as_view(), name="idea-detail"),
+    path("<int:pk>/publish/", IdeaPublishView.as_view(), name="idea-publish"),
 ]
