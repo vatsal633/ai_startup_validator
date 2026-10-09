@@ -14,17 +14,17 @@ const MyIdeas = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = useCallback(async (filters) => {
-    setLoading(true);
+  const load = useCallback(async (filters, { quiet = false } = {}) => {
+    if (!quiet) setLoading(true);
     setError("");
     try {
       const data = await listMyIdeas(filters);
       setIdeas(data?.results ?? []);
     } catch (err) {
-      setError(err.message);
-      setIdeas([]);
+      if (!quiet) setError(err.message);
+      if (!quiet) setIdeas([]);
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }, []);
 
@@ -35,6 +35,18 @@ const MyIdeas = () => {
     }, 300);
     return () => clearTimeout(timer);
   }, [load, searchTerm, statusFilter]);
+
+  // the analysis runs in a background thread server-side, so poll while any
+  // idea is still processing and stop as soon as none are
+  const hasProcessing = ideas.some((idea) => idea.status === "processing");
+
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const timer = setInterval(() => {
+      load({ q: searchTerm, status: statusFilter }, { quiet: true });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [hasProcessing, load, searchTerm, statusFilter]);
 
   /** Swap in the updated idea, or drop it when it was deleted. */
   const handleChanged = (id) => (updated) => {

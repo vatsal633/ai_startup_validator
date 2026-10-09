@@ -37,20 +37,14 @@ const AnalyzeIdeaFrom = () => {
     setIsAnalyzing(true);
 
     try {
-      const idea = await submitIdea({
+      await submitIdea({
         ...form,
         // the API takes a decimal; the input gives a string
         funding_requirement: Number(form.funding_requirement),
       });
 
-      // generation can still fail server-side after a 201 — say so plainly
-      if (idea?.status === "failed") {
-        setError(
-          "Your idea was saved, but the AI analysis failed. Open it from My Ideas and try editing it to re-run the analysis."
-        );
-        return;
-      }
-
+      // the API returns as soon as the idea is saved; the analysis runs in the
+      // background, and My Ideas polls until it finishes
       router.push("/founder/myideas");
     } catch (err) {
       setError(err.message);
@@ -279,8 +273,8 @@ const AnalyzeIdeaFrom = () => {
 
         {isAnalyzing && (
           <p className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300">
-            Running the analysis — this usually takes 10-30 seconds. Please don&apos;t
-            close this tab.
+            Saving your idea — the AI analysis will keep running in the background
+            once you land on My Ideas.
           </p>
         )}
 

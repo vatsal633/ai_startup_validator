@@ -6,11 +6,16 @@ from django.db.models import Count, F, Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import APIException, PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from analysis.report_generator import generate_report
+from analysis.tasks import (
+    generate_report_for_idea,
+    recover_stale_processing,
+    run_in_background,
+)
 from connections.models import ConnectionRequest
 from .models import Idea, IdeaReport, IdeaView
 from .serializers import (
@@ -53,12 +58,6 @@ def build_report(idea):
     )
 
 
-class ReportRegenerationFailed(APIException):
-    status_code = status.HTTP_502_BAD_GATEWAY
-    default_detail = "Could not regenerate the AI report, so no changes were saved. Please try again."
-    default_code = "report_regeneration_failed"
-
-
 class IdeaCreateView(generics.CreateAPIView):
     serializer_class = IdeaCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -67,16 +66,11 @@ class IdeaCreateView(generics.CreateAPIView):
         if self.request.user.role != "founder":
             raise PermissionDenied("Only founders can submit ideas.")
 
+        # saved as PROCESSING (the model default); the response goes back now
+        # and the report is built in the background. The client polls the idea
+        # until it reaches draft or failed.
         idea = serializer.save(founder=self.request.user)
-
-        try:
-            build_report(idea)
-            # analyzed but not public — the founder reviews the report, then publishes
-            idea.status = Idea.Status.DRAFT
-        except Exception:
-            idea.status = Idea.Status.FAILED
-            logger.exception("Report generation failed for idea %s", idea.id)
-        idea.save(update_fields=["status"])
+        run_in_background(generate_report_for_idea, idea.id)
 
 
 class IdeaListView(generics.ListAPIView):
@@ -184,21 +178,24 @@ class IdeaDetailView(generics.RetrieveAPIView):
         if not changed:
             return Response(IdeaDetailSerializer(idea).data)
 
-        try:
-            with transaction.atomic():
-                idea = serializer.save()
-                if changed - {"title"}:
-                    build_report(idea)
-                    # a re-analyzed idea drops out of the marketplace until the
-                    # founder reviews the new report and republishes
-                    idea.status = Idea.Status.DRAFT
-                    idea.published_at = None
-                    idea.save(update_fields=["status", "published_at"])
-        except Exception:
-            logger.exception("Report regeneration failed for idea %s", idea.id)
-            raise ReportRegenerationFailed()
+        with transaction.atomic():
+            idea = serializer.save()
+            if changed - {"title"}:
+                # a re-analyzed idea leaves the marketplace until the founder
+                # reviews the new report and republishes
+                idea.status = Idea.Status.PROCESSING
+                idea.published_at = None
+                idea.save(update_fields=["status", "published_at"])
+                needs_report = True
+            else:
+                needs_report = False
 
-        idea = self.get_queryset().get(pk=idea.pk)  # refresh with the new report
+        # started outside the transaction: the thread reads this row, so the
+        # edit has to be committed before it looks
+        if needs_report:
+            run_in_background(generate_report_for_idea, idea.id)
+
+        idea = self.get_queryset().get(pk=idea.pk)
         return Response(IdeaDetailSerializer(idea).data)
 
     def delete(self, request, *args, **kwargs):
@@ -251,12 +248,41 @@ class IdeaPublishView(APIView):
         return Response(IdeaDetailSerializer(idea).data)
 
 
+class IdeaRetryAnalysisView(APIView):
+    """POST /api/ideas/<id>/retry/ : re-run a failed analysis.
+
+    Without this a failed idea is a dead end — it cannot be published, and the
+    only way back was to edit a field to trigger regeneration.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        idea = get_object_or_404(Idea, pk=pk)
+        if idea.founder_id != request.user.id:
+            raise PermissionDenied("You can only retry your own ideas.")
+
+        if idea.status == Idea.Status.PROCESSING:
+            raise ValidationError("This idea is already being analyzed.")
+        if idea.status == Idea.Status.PUBLISHED:
+            raise ValidationError("Unpublish the idea before re-running its analysis.")
+
+        idea.status = Idea.Status.PROCESSING
+        idea.save(update_fields=["status"])
+        run_in_background(generate_report_for_idea, idea.id)
+
+        return Response(IdeaDetailSerializer(idea).data, status=status.HTTP_202_ACCEPTED)
+
+
 class MyIdeasView(generics.ListAPIView):
     """GET /api/ideas/mine/ : the logged-in founder's ideas, every status."""
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = MyIdeaSerializer
 
     def get_queryset(self):
+        # a thread dies with its process, so a restart can strand an idea in
+        # "processing"; clear those out so they become retryable
+        recover_stale_processing()
+
         qs = (
             Idea.objects.filter(founder=self.request.user)
             .annotate(
