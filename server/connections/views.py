@@ -51,7 +51,7 @@ class MyConnectionsView(generics.ListAPIView):
             qs = ConnectionRequest.objects.filter(idea__founder=user)
         else:
             qs = ConnectionRequest.objects.filter(investor=user)
-        qs = qs.select_related("idea", "investor")
+        qs = qs.select_related("idea", "idea__founder", "idea__report", "investor")
 
         # ?status= drives the founder page's pending/accepted/declined tabs
         status_filter = self.request.query_params.get("status", "").strip()
