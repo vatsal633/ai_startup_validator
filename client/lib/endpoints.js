@@ -86,7 +86,8 @@ export const getDashboardStats = () => apiGet("/api/ideas/dashboard/stats/");
 export const requestConnection = (ideaId) =>
   apiPost(`/api/connections/request/${ideaId}/`);
 
-export const listConnections = () => apiGet("/api/connections/");
+export const listConnections = (filters = {}) =>
+  apiGet(`/api/connections/${queryString(filters)}`);
 
 export const respondToConnection = (id, action) =>
   apiPost(`/api/connections/${id}/${action}/`);
