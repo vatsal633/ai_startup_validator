@@ -273,6 +273,54 @@ class TieredDisclosureTests(IdeaTestCase):
         self.assertEqual(response.status_code, 403)
 
 
+class DetailPayloadTests(IdeaTestCase):
+    """Fields the founder's idea detail page renders."""
+
+    def setUp(self):
+        super().setUp()
+        self.idea = self.make_idea(status=Idea.Status.PUBLISHED)
+
+    def test_the_owner_gets_counts_and_display_labels(self):
+        self.as_founder()
+
+        body = self.client.get(reverse("idea-detail", args=[self.idea.id])).json()
+
+        self.assertEqual(body["view_count"], 0)
+        self.assertEqual(body["request_count"], 0)
+        self.assertEqual(body["stage_display"], "MVP")
+        self.assertEqual(body["business_model_display"], "Freemium")
+
+    def test_counts_reflect_real_activity(self):
+        IdeaView.objects.create(idea=self.idea, viewer=self.investor)
+        ConnectionRequest.objects.create(idea=self.idea, investor=self.investor)
+        self.as_founder()
+
+        body = self.client.get(reverse("idea-detail", args=[self.idea.id])).json()
+
+        self.assertEqual(body["view_count"], 1)
+        self.assertEqual(body["request_count"], 1)
+
+    def test_is_owner_is_true_for_the_founder(self):
+        self.as_founder()
+
+        body = self.client.get(reverse("idea-detail", args=[self.idea.id])).json()
+
+        self.assertTrue(body["is_owner"])
+
+    def test_is_owner_is_false_for_someone_else(self):
+        """The founder detail page uses this to refuse another founder's idea."""
+        self.as_investor()
+
+        body = self.client.get(reverse("idea-detail", args=[self.idea.id])).json()
+
+        self.assertFalse(body["is_owner"])
+
+    def test_is_owner_is_false_for_an_anonymous_marketplace_reader(self):
+        row = self.client.get(reverse("idea-list")).json()["results"][0]
+
+        self.assertFalse(row["is_owner"])
+
+
 class ViewCountTests(IdeaTestCase):
     def setUp(self):
         super().setUp()
