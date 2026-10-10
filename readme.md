@@ -1,419 +1,372 @@
 # 🚀 AI Startup Validator & Investor Discovery Platform
 
-An AI-powered platform that helps entrepreneurs validate startup ideas and connect with potential investors through controlled information sharing.
+An AI-powered platform that helps founders validate startup ideas and connect with
+investors through controlled information sharing.
+
+> **Academic project.** The MVP does not process real investments and does not
+> guarantee startup success. AI scores are decision-support information, not advice.
+
+---
 
 ## 📌 Overview
 
-The platform combines **AI-based startup analysis** with a **startup discovery marketplace**.
+A founder submits a business idea with its industry, audience, budget, location and
+business model. Gemini analyses it and produces a structured validation report.
 
-A founder submits a business idea along with information such as industry, target audience, budget, location, and business model. The system analyzes the idea using AI and generates a structured validation report.
-
-After reviewing the report, the founder can publish a **limited public version** of the startup profile. Investors can discover startups, review their high-level information and AI analysis, and request access to additional details.
-
-The goal is to help founders understand the potential of their ideas while making it easier for investors to discover promising opportunities.
-
-> **Important:** The platform is designed as an academic/educational project. The MVP does not process real investments or guarantee startup success.
-
----
-
-## 📌 Setup the project
-
-#### Commands To Setup the Frontend
-```
-git clone https://github.com/vatsal633/ai_startup_validator.git
-
-cd client
-
-npm install
-
-npm run dev
-```
-
-## 🎯 Problem Statement
-
-Entrepreneurs often have business ideas but face difficulties in:
-
-- Understanding market potential
-- Identifying competitors
-- Defining target customers
-- Evaluating risks
-- Estimating funding requirements
-- Finding interested investors
-
-At the same time, investors have difficulty discovering and evaluating early-stage ideas efficiently.
-
-Our platform attempts to solve both problems using **AI analysis + structured startup discovery + controlled information sharing**.
-
----
-
-## 💡 Proposed Solution
-
-The platform provides four major components:
-
-### 1. 🤖 AI Startup Validator
-
-The founder enters their startup information and receives an AI-generated analysis covering:
-
-- Market potential
-- Competition
-- Target customers
-- Business model
-- Strengths and weaknesses
-- Risks
-- Funding requirements
-- Growth opportunities
-- Overall startup score
-
-### 2. 📊 AI-Generated Report
-
-The analysis is presented in a structured dashboard using:
-
-- Scores
-- Charts
-- Market insights
-- Risk indicators
-- Recommendations
-- SWOT-style analysis
-
-### 3. 🌐 Startup Marketplace
-
-Founders can publish their startup after reviewing the AI report.
-
-Investors can:
-
-- Browse startups
-- Search by industry
-- Filter startups
-- View public startup information
-- Compare opportunities
-- Express interest
-
-### 4. 🔐 Controlled Information Disclosure
-
-A major concern is that publicly revealing a complete business idea could allow others to copy it.
-
-Therefore, the platform separates information into levels.
-
-**Public information:**
-- Startup name
-- Industry
-- Problem
-- High-level solution
-- Target market
-- Funding requirement
-- AI validation score
-
-**Restricted information:**
-- Detailed business plan
-- Proprietary technical information
-- Detailed implementation
-- Confidential documents
-
-An investor can request access to additional information, and the founder can approve or reject the request.
-
----
-
-## 🔄 System Workflow
-
-```text
-Founder
-   │
-   ▼
-Submit Startup Idea
-   │
-   ▼
-AI Analysis
-   │
-   ├── Market Analysis
-   ├── Competition Analysis
-   ├── Customer Analysis
-   ├── Business Model Analysis
-   └── Risk Analysis
-   │
-   ▼
-AI Validation Report
-   │
-   ▼
-Founder Reviews Report
-   │
-   ▼
-Publish Public Profile
-   │
-   ▼
-Investor Marketplace
-   │
-   ▼
-Investor Views Startup
-   │
-   ▼
-Request Detailed Information
-   │
-   ▼
-Founder Approves / Rejects
-   │
-   ▼
-Founder ↔ Investor Connection
-```
+After reviewing that report the founder **publishes** the idea, which puts a limited
+public summary on the marketplace. Investors browse published startups, see the
+high-level information and the AI score, and request access to the full detail. The
+founder approves or declines each request.
 
 ---
 
 ## 🏗️ Technology Stack
 
-### Frontend
-
-- JavaScript
-- React.js
-- HTML5
-- CSS3
-- Chart.js / Recharts
-
-### Backend
-
-- Python
-- Flask
-- REST APIs
-
-### AI
-
-- Large Language Model API such as Gemini or OpenAI
-- Natural Language Processing (NLP)
-- Structured AI prompting
-- Optional ML models for classification/clustering
-
-### Database
-
-- postgreSQL
-
-### Authentication & Security
-
-- JWT authentication
-- Password hashing
-- Role-based access
-- Controlled access to private startup information
-
-### Development Tools
-
-- Git
-- GitHub
-- Postman
-- VS Code
+| Layer | What we actually use |
+|---|---|
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS v4, JavaScript |
+| Backend | Django 6.1, Django REST Framework |
+| Database | PostgreSQL |
+| AI | Google Gemini (`gemini-3.6-flash`) via the `google-genai` SDK |
+| Auth | JWT (`djangorestframework-simplejwt`), rotating refresh tokens |
+| Email | SMTP (password reset) |
 
 ---
 
-## 🧩 High-Level Architecture
+## 📌 Running the project
 
-```text
-                 ┌──────────────────┐
-                 │      Founder     │
-                 └────────┬─────────┘
-                          │
-                          ▼
-                 ┌──────────────────┐
-                 │ React Frontend   │
-                 └────────┬─────────┘
-                          │
-                     REST API
-                          │
-                          ▼
-                 ┌──────────────────┐
-                 │  Python Flask    │
-                 │     Backend      │
-                 └──────┬─────┬─────┘
-                        │     │
-              ┌─────────┘     └─────────┐
-              ▼                         ▼
-      ┌───────────────┐         ┌──────────────┐
-      │   AI Service  │         │   MongoDB    │
-      │ LLM / ML      │         │   Database   │
-      └───────────────┘         └──────────────┘
-                        │
-                        ▼
-                Structured Report
-                        │
-                        ▼
-                React Dashboard
-                        │
-                        ▼
-                Investor Marketplace
+You need **Python 3.12+**, **Node 20.9+** (what Next 16 requires) and a running **PostgreSQL** instance.
+
+### 1. Clone
+
+```bash
+git clone https://github.com/vatsal633/ai_startup_validator.git
+cd ai_startup_validator
 ```
 
----
+### 2. Backend
 
-## 👥 User Roles
+```bash
+cd server
+python -m venv venv
+venv\Scripts\activate        # macOS/Linux: source venv/bin/activate
+pip install -r requirements.txt
+```
 
-### Founder
+Create `server/.env`:
 
-A founder can:
+```ini
+SECRET_KEY=your-django-secret-key
+DEBUG=True
 
-- Register/login
-- Submit a startup idea
-- Run AI analysis
-- View validation reports
-- Edit startup information
-- Publish a startup
-- Control private information
-- Receive investor requests
-- Approve/reject access requests
+DB_NAME=ai_startup_validator
+DB_USER=postgres
+DB_PASSWORD=your-db-password
+DB_HOST=localhost
+DB_PORT=5432
 
-### Investor
+# Gemini API key from https://aistudio.google.com/apikey
+GEMINI_API_KEY=your-gemini-key
 
-An investor can:
+# Gmail account + app password, used for password-reset emails
+EMAIL_HOST_USER=you@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
 
-- Register/login
-- Browse published startups
-- Search/filter startups
-- View public startup information
-- View AI validation results
-- Request additional information
-- Shortlist interesting startups
-- Contact founders through the platform
+FRONTEND_URL=http://localhost:3000
+```
 
-### Admin
+Then:
 
-An administrator can:
+```bash
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
 
-- Manage users
-- Manage published startups
-- Monitor reports
-- Handle inappropriate content
-- Manage platform activity
+The API is on `http://127.0.0.1:8000`.
 
----
+### 3. Frontend
 
-## 🔐 Privacy & Security Approach
+```bash
+cd client
+npm install
+```
 
-The platform should **not require founders to publicly reveal confidential intellectual property**.
+Create `client/.env.local`:
 
-The system should encourage users to keep sensitive information private.
+```ini
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+```
 
-Private information can be protected through:
+Then:
 
-- Authentication
-- Authorization
-- Role-based access
-- Founder approval for restricted content
-- Secure database access
-- Password hashing
-- JWT-based sessions
-- Input validation
+```bash
+npm run dev
+```
 
-The platform does not guarantee that an idea cannot be copied. It only provides technical controls to reduce unnecessary disclosure.
+The app is on `http://localhost:3000`.
 
----
+### 4. Tests
 
-## 💰 Business Model
+```bash
+cd server
+python manage.py test
+```
 
-The long-term business model could include:
+98 tests covering authentication, the publish flow, tiered disclosure, the connection
+state machine and the background analysis task.
 
-- Premium AI analysis
-- Founder subscriptions
-- Investor subscriptions
-- Featured startup listings
-- Platform/service fees
-- Potential transaction-related revenue where legally permitted
-
-For the academic MVP, **no real-money investment processing is required**. Investors can simply express interest and connect with founders.
+> **Never commit** `.env`, `.env.local`, `venv/`, `node_modules/` or `db.sqlite3`.
 
 ---
 
-## 📁 Suggested Project Structure
+## 🔄 How the workflow actually works
 
 ```text
-ai-startup-validator/
+Founder submits an idea
+        │
+        ▼
+  status = processing          ← the API responds immediately
+        │
+        ▼
+Gemini runs in the background
+        │
+        ├── success → status = draft    (private to the founder)
+        └── failure → status = failed   (retry from the UI)
+        │
+        ▼
+Founder reviews the report
+        │
+        ▼
+Founder clicks Publish → status = published
+        │
+        ▼
+Idea appears on the public marketplace
+        │
+        ▼
+Investor requests access
+        │
+        ▼
+Founder accepts → investor sees the full report
+```
+
+### Idea statuses
+
+| Status | Meaning |
+|---|---|
+| `processing` | The AI analysis is running |
+| `draft` | Analysed, private to the founder |
+| `published` | Public summary visible on the marketplace |
+| `failed` | Analysis failed; retry to run it again |
+
+A substantive edit to a published idea sends it back to `processing`, then `draft` —
+the report it was published on no longer matches, so the founder reviews and
+republishes.
+
+---
+
+## 🔐 Controlled information disclosure
+
+Publishing an idea does **not** publish the whole idea. The API serves two shapes:
+
+**Public (anyone, including signed-out visitors):** title, short description,
+industry, country, stage, business model, funding requirement, founder name and the
+AI validation score.
+
+**Restricted (founder, admin, or an investor with an *accepted* connection):** the
+problem and solution detail, target customer, differentiator, competitors, and the
+full AI report.
+
+This is enforced server-side in `IdeaDetailView`, which picks the serializer based on
+who is asking. A *pending* request is not enough — only an accepted one unlocks the
+report. Unpublished ideas are visible only to their founder and to admins.
+
+---
+
+## 🔌 API reference
+
+All paths are relative to `http://127.0.0.1:8000`. Everything requires a
+`Bearer <access_token>` header except where marked **public**.
+
+### Auth — `/api/auth/`
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `register/` | Create an account (**public**) |
+| POST | `login/` | Obtain access + refresh tokens (**public**) |
+| POST | `refresh/` | Exchange a refresh token (**public**) |
+| GET | `me/` | The signed-in user's profile |
+| PATCH | `me/` | Update name, bio, phone, location, LinkedIn, website |
+| POST | `password-change/` | Change password while signed in |
+| POST | `password-reset/` | Email a reset link (**public**) |
+| POST | `password-reset/confirm/` | Set a new password from the link (**public**) |
+
+The access token carries `role` and `email` claims, so the frontend can route by role
+without an extra request.
+
+### Ideas — `/api/ideas/`
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `` | Marketplace list (**public**), paginated |
+| POST | `submit/` | Submit an idea; returns at once, analysis runs in the background |
+| GET | `mine/` | The founder's own ideas, every status |
+| GET | `dashboard/stats/` | Counts for the founder dashboard |
+| GET | `<id>/` | One idea — teaser or full report depending on who asks |
+| PATCH | `<id>/` | Edit your own idea |
+| DELETE | `<id>/` | Delete your own idea |
+| POST | `<id>/publish/` | Publish a draft |
+| DELETE | `<id>/publish/` | Unpublish |
+| POST | `<id>/retry/` | Re-run a failed analysis |
+
+Marketplace filters: `q`, `industry`, `country`, `stage`, `business_model`,
+`min_score`, `max_score`, `min_funding`, `max_funding`, and
+`ordering` (`newest`, `oldest`, `score`, `funding`).
+
+### Connections — `/api/connections/`
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `request/<idea_id>/` | Investor requests access (empty body) |
+| GET | `` | Your requests — sent if investor, received if founder |
+| POST | `<id>/accept/` · `<id>/decline/` | Founder responds |
+
+### Notifications — `/api/notifications/`
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `` | Your notifications; filters `unread=true`, `type=` |
+| GET | `unread-count/` | Badge count |
+| POST | `<id>/read/` | Mark one read |
+| POST | `read-all/` | Mark all read |
+
+---
+
+## 🧠 How the AI analysis runs
+
+`analysis/report_generator.py` sends the idea's details to Gemini and asks for JSON
+matching a fixed schema, enforced server-side through the SDK's `response_format`.
+That means no markdown-fence stripping and no guessing at the shape.
+
+The call happens in a **background thread** (`analysis/tasks.py`), not during the
+request. A Gemini call takes tens of seconds normally and minutes when the API is
+rate-limiting, so running it inline held the HTTP request open the whole time.
+Submitting now responds in about 0.2s.
+
+This is deliberately a thread rather than Celery: the project has no message broker,
+and Redis plus a worker process is a lot of infrastructure for one call. The trade-off
+is that work does not survive a server restart, so `recover_stale_processing()` marks
+anything stuck in `processing` for over 15 minutes as `failed`, and the retry endpoint
+lets the founder run it again. To scale past one server, replace `run_in_background`
+with a real task queue — nothing else needs to change.
+
+### Gemini quota and errors
+
+The free tier has per-minute and per-day limits, and **quota is per project, not per
+key** — issuing a new API key in the same project does not reset anything. A daily
+limit clears on its own at midnight Pacific.
+
+Two failures look similar but are not:
+
+- **429** — quota exhausted. Wait for the reset, or raise limits in Google AI Studio.
+- **503** — the model is temporarily overloaded. Transient; retrying usually works.
+
+Either marks the idea `failed`, and the founder can hit **Retry analysis**.
+
+---
+
+## 👥 User roles
+
+**Founder** — submit ideas, run AI analysis, review reports, edit, publish and
+unpublish, receive and respond to investor requests.
+
+**Investor** — browse and filter the marketplace, view public summaries and AI
+scores, request access to full details.
+
+**Admin** — Django admin at `/admin/`: manage users, ideas, connections and
+notifications. Admins can read any idea. The role cannot be self-assigned at
+registration.
+
+---
+
+## 📁 Project structure
+
+```text
+ai_startup_validator/
 │
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── hooks/
-│   │   └── utils/
-│   └── package.json
-│
-├── backend/
+├── client/                    # Next.js frontend
 │   ├── app/
-│   │   ├── routes/
-│   │   ├── models/
-│   │   ├── services/
-│   │   ├── controllers/
-│   │   └── utils/
-│   ├── app.py
-│   └── requirements.txt
+│   │   ├── (auth)/            # login, signup, password reset
+│   │   ├── (dashboards)/      # founder and investor areas
+│   │   │   ├── components/    # shared dashboard UI
+│   │   │   ├── founder/
+│   │   │   └── investor/
+│   │   └── startups/          # public marketplace
+│   └── lib/                   # api client, endpoints, auth, helpers
 │
-├── README.md
-└── .gitignore
+├── server/                    # Django backend
+│   ├── accounts/              # custom user, JWT auth, profile
+│   ├── ideas/                 # Idea, IdeaReport, IdeaView
+│   ├── analysis/              # Gemini prompt + background task
+│   ├── connections/           # investor access requests
+│   ├── notifications/         # in-app notifications
+│   ├── matching/              # placeholder, not implemented
+│   └── config/                # settings and root urls
+│
+└── readme.md
 ```
+
+### Frontend notes
+
+`lib/api.js` is the only place the app talks to Django. It attaches the bearer token,
+refreshes an expired access token once per request and replays the call, and only
+redirects to `/login` if that fails. Refreshes are single-flight, so simultaneous 401s
+cannot each spend the single-use rotating refresh token.
+
+Route protection (`RequireRole`) is a **UX guard, not a security boundary** — tokens
+live in `localStorage`, so it only runs client-side. The API enforces the real rules.
+Next 16 renamed Middleware to Proxy, but Proxy reads sessions from cookies and so
+cannot see these tokens; guarding server-side would mean moving to httpOnly cookies.
 
 ---
 
-## 🚧 MVP Features
+## ✅ Status
 
-The first version should focus on:
+**Working end to end:** registration and login with role-based routing, password
+reset by email, idea submission with background AI analysis, the full validation
+report, publish/unpublish, the public marketplace with search and filters, investor
+access requests, founder approve/decline, notifications, and profile settings.
 
-- [ ] User registration/login
-- [ ] Founder dashboard
-- [ ] Investor dashboard
-- [ ] Startup idea submission
-- [ ] AI startup analysis
-- [ ] Structured AI report
-- [ ] Startup publishing
-- [ ] Startup discovery/search
-- [ ] Investor interest request
-- [ ] Founder approval/rejection
-- [ ] Basic database integration
-- [ ] Responsive UI
+**Not implemented:**
 
-### Future Features
-
-- [ ] Advanced market research using external data
-- [ ] Real-time market trends
-- [ ] Investor verification
-- [ ] NDA/document management
-- [ ] Startup comparison
-- [ ] Advanced ML-based scoring
-- [ ] Notifications
-- [ ] Messaging
-- [ ] Analytics dashboard
+- `matching/` — intended to hold investor recommendation logic ("which ideas should
+  this investor see first?"). Currently an empty app. There is not yet enough
+  behavioural data to rank on, so it would need explicit investor preferences first.
+- Admin dashboard beyond Django admin.
+- Photo upload, two-factor authentication, session management (the settings screen
+  says so rather than pretending).
+- Messaging between founders and investors.
 
 ---
 
 ## ⚠️ Limitations
 
-AI-generated startup scores and recommendations are **decision-support information**, not guarantees of business success.
+AI-generated scores and recommendations are **decision-support information**, not
+guarantees. Market conditions, competition, execution and funding all change outcomes.
 
-Market conditions, competition, execution, financial conditions, and other real-world factors can change the outcome.
-
-The academic MVP should not be presented as a platform that guarantees investment returns or startup success.
-
----
-
-## 🎓 Academic Objective
-
-The project demonstrates the integration of:
-
-- Full-stack web development
-- REST API development
-- Artificial Intelligence
-- Natural Language Processing
-- Database management
-- Authentication and authorization
-- Data visualization
-- Role-based access control
-- Real-world software architecture
+The platform reduces unnecessary disclosure through authentication, role-based access
+and founder approval. It cannot guarantee an idea will not be copied.
 
 ---
 
-## 👨‍💻 Team
+## 🎓 Academic objective
 
-**Project:** AI Startup Validator & Investor Discovery Platform
-
-**Frontend:** JavaScript / React.js  
-**Backend:** Python / Flask  
-**AI:** LLM API + optional ML models  
-**Database:** MongoDB
+Demonstrates full-stack development, REST API design, LLM integration with structured
+output, relational data modelling, JWT authentication and role-based access control,
+background task handling, automated testing, and data visualisation.
 
 ---
 
 ## 📄 License
 
-This project is developed for educational and academic purposes.
+Developed for educational and academic purposes.
