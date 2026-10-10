@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Eye, LoaderCircle, RefreshCw, Trash2, Users } from "lucide-react";
 import {
   STATUS_STYLES,
@@ -36,15 +37,22 @@ export default function MyIdeaCard({ idea, onChanged }) {
   const score = idea.ai_validation_score;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+    <div className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-indigo-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-900">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-lg font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+        <Link
+          href={`/founder/myideas/${idea.id}`}
+          aria-hidden="true"
+          tabIndex={-1}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-lg font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400"
+        >
           {(idea.title || "?").charAt(0).toUpperCase()}
-        </div>
+        </Link>
 
-        <div className="min-w-0 flex-1">
+        <Link href={`/founder/myideas/${idea.id}`} className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold">{idea.title}</h3>
+            <h3 className="font-bold transition group-hover:text-indigo-600">
+              {idea.title}
+            </h3>
             <span
               className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
                 STATUS_STYLES[idea.status] ?? STATUS_STYLES.draft
@@ -69,7 +77,7 @@ export default function MyIdeaCard({ idea, onChanged }) {
               {formatFunding(idea.funding_requirement)}
             </span>
           </div>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-4 sm:border-l sm:border-slate-200 sm:pl-5 dark:sm:border-slate-800">
           <div className="text-center">

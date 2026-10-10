@@ -35,15 +35,21 @@ class IdeaTeaserSerializer(serializers.ModelSerializer):
     """Public-facing list view — no full report details."""
     founder_name = serializers.SerializerMethodField()
     ai_validation_score = serializers.SerializerMethodField()
+    is_owner = serializers.SerializerMethodField()
 
     class Meta:
         model = Idea
         fields = ["id", "title", "idea", "industry", "country", "stage",
                   "business_model", "funding_requirement", "status",
-                  "founder_name", "ai_validation_score", "created_at"]
+                  "founder_name", "ai_validation_score", "is_owner", "created_at"]
 
     def get_founder_name(self, obj):
         return f"{obj.founder.first_name} {obj.founder.last_name}".strip()
+
+    def get_is_owner(self, obj):
+        request = self.context.get("request")
+        return bool(request and obj.founder_id == request.user.id)
+
 
     def get_ai_validation_score(self, obj):
         report = getattr(obj, "report", None)
@@ -52,15 +58,34 @@ class IdeaTeaserSerializer(serializers.ModelSerializer):
 
 class IdeaDetailSerializer(serializers.ModelSerializer):
     report = IdeaReportSerializer(read_only=True)
+    view_count = serializers.SerializerMethodField()
+    request_count = serializers.SerializerMethodField()
+    is_owner = serializers.SerializerMethodField()
+    business_model_display = serializers.CharField(
+        source="get_business_model_display", read_only=True
+    )
+    stage_display = serializers.CharField(source="get_stage_display", read_only=True)
 
     class Meta:
         model = Idea
         fields = [
             "id", "title", "idea", "industry", "problem", "solution", "target_customer",
-            "differentiator", "country", "business_model", "stage",
-            "funding_requirement", "competitors", "status", "published_at",
-            "created_at", "report",
+            "differentiator", "country", "business_model", "business_model_display",
+            "stage", "stage_display", "funding_requirement", "competitors", "status",
+            "published_at", "created_at", "report", "view_count", "request_count",
+            "is_owner",
         ]
+
+    def get_view_count(self, obj):
+        return obj.views.count()
+
+    def get_request_count(self, obj):
+        return obj.connection_requests.count()
+
+    def get_is_owner(self, obj):
+        request = self.context.get("request")
+        return bool(request and obj.founder_id == request.user.id)
+
 
 
 class MyIdeaSerializer(serializers.ModelSerializer):
