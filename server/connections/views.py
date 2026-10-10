@@ -48,8 +48,22 @@ class MyConnectionsView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.role == "founder":
-            return ConnectionRequest.objects.filter(idea__founder=user).select_related("idea", "investor")
-        return ConnectionRequest.objects.filter(investor=user).select_related("idea", "investor")
+            qs = ConnectionRequest.objects.filter(idea__founder=user)
+        else:
+            qs = ConnectionRequest.objects.filter(investor=user)
+        qs = qs.select_related("idea", "investor")
+
+        # ?status= drives the founder page's pending/accepted/declined tabs
+        status_filter = self.request.query_params.get("status", "").strip()
+        if status_filter in ConnectionRequest.Status.values:
+            qs = qs.filter(status=status_filter)
+
+        # ?idea= narrows to requests on one idea
+        idea_id = self.request.query_params.get("idea", "").strip()
+        if idea_id.isdigit():
+            qs = qs.filter(idea_id=int(idea_id))
+
+        return qs
 
 
 class ConnectionRequestRespondView(APIView):
@@ -87,4 +101,6 @@ class ConnectionRequestRespondView(APIView):
             message=notif_message,
         )
 
-        return Response(ConnectionRequestSerializer(connection).data)
+        return Response(
+            ConnectionRequestSerializer(connection, context={"request": request}).data
+        )

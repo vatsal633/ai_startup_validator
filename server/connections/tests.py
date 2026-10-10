@@ -147,6 +147,114 @@ class RespondTests(ConnectionTestCase):
         self.assertIn("FarmSense AI", notification.message)
 
 
+class InvestorProfileTests(ConnectionTestCase):
+    """What a founder learns about an investor, and when."""
+
+    def setUp(self):
+        super().setUp()
+        self.investor.bio = "Angel investing in Indian climate tech."
+        self.investor.location = "Bengaluru, India"
+        self.investor.linkedin = "https://linkedin.com/in/ivan"
+        self.investor.save()
+        self.connection = ConnectionRequest.objects.create(
+            idea=self.idea, investor=self.investor
+        )
+
+    def founder_sees(self):
+        self.client.force_authenticate(user=self.founder)
+        return self.client.get(reverse("my-connections")).json()["results"][0][
+            "investor_profile"
+        ]
+
+    def test_the_founder_sees_enough_to_judge_a_pending_request(self):
+        profile = self.founder_sees()
+
+        self.assertEqual(profile["name"], "Ivan I")
+        self.assertEqual(profile["location"], "Bengaluru, India")
+        self.assertIn("climate tech", profile["bio"])
+        self.assertEqual(profile["linkedin"], "https://linkedin.com/in/ivan")
+
+    def test_the_email_is_withheld_while_the_request_is_pending(self):
+        """Accepting is what unlocks contact, so the email waits for it."""
+        self.assertNotIn("email", self.founder_sees())
+
+    def test_the_email_appears_once_accepted(self):
+        self.connection.status = ConnectionRequest.Status.ACCEPTED
+        self.connection.save()
+
+        self.assertEqual(self.founder_sees()["email"], "investor@test.com")
+
+    def test_the_email_stays_hidden_on_a_declined_request(self):
+        self.connection.status = ConnectionRequest.Status.DECLINED
+        self.connection.save()
+
+        self.assertNotIn("email", self.founder_sees())
+
+    def test_an_investor_always_sees_their_own_email(self):
+        self.client.force_authenticate(user=self.investor)
+
+        profile = self.client.get(reverse("my-connections")).json()["results"][0][
+            "investor_profile"
+        ]
+
+        self.assertEqual(profile["email"], "investor@test.com")
+
+    def test_accepting_returns_the_email_straight_away(self):
+        """The page shows the contact details without needing a reload."""
+        self.client.force_authenticate(user=self.founder)
+
+        body = self.client.post(
+            reverse("connection-respond", args=[self.connection.id, "accept"])
+        ).json()
+
+        self.assertEqual(body["investor_profile"]["email"], "investor@test.com")
+
+
+class ListFilterTests(ConnectionTestCase):
+    def setUp(self):
+        super().setUp()
+        self.pending = ConnectionRequest.objects.create(
+            idea=self.idea, investor=self.investor
+        )
+        other_investor = User.objects.create_user(
+            email="second@test.com", password="s3cret-pass-99",
+            first_name="Sara", last_name="S", role="investor",
+        )
+        self.accepted = ConnectionRequest.objects.create(
+            idea=self.idea, investor=other_investor,
+            status=ConnectionRequest.Status.ACCEPTED,
+        )
+        self.client.force_authenticate(user=self.founder)
+
+    def test_status_filter(self):
+        url = reverse("my-connections")
+
+        self.assertEqual(self.client.get(f"{url}?status=pending").json()["count"], 1)
+        self.assertEqual(self.client.get(f"{url}?status=accepted").json()["count"], 1)
+        self.assertEqual(self.client.get(url).json()["count"], 2)
+
+    def test_an_unknown_status_filter_is_ignored(self):
+        url = f"{reverse('my-connections')}?status=not-a-status"
+
+        self.assertEqual(self.client.get(url).json()["count"], 2)
+
+    def test_idea_filter(self):
+        url = f"{reverse('my-connections')}?idea={self.idea.id}"
+
+        self.assertEqual(self.client.get(url).json()["count"], 2)
+
+    def test_a_non_numeric_idea_filter_is_ignored(self):
+        url = f"{reverse('my-connections')}?idea=abc"
+
+        self.assertEqual(self.client.get(url).json()["count"], 2)
+
+    def test_the_list_carries_the_idea_title_and_status(self):
+        row = self.client.get(reverse("my-connections")).json()["results"][0]
+
+        self.assertEqual(row["idea_title"], "FarmSense AI")
+        self.assertEqual(row["idea_status"], "published")
+
+
 class ListTests(ConnectionTestCase):
     def setUp(self):
         super().setUp()
