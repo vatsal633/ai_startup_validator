@@ -22,6 +22,12 @@ export class ApiError extends Error {
   }
 }
 
+/** "current_password" -> "Current password" */
+function humanizeField(field) {
+  const words = field.replace(/_/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /** DRF returns {detail}, {field: [msgs]}, or a bare list. Produce something showable. */
 function messageFromErrorBody(body, fallback) {
   if (!body) return fallback;
@@ -30,15 +36,24 @@ function messageFromErrorBody(body, fallback) {
 
   if (Array.isArray(body)) return body.join(" ");
 
-  const firstField = Object.entries(body)[0];
-  if (firstField) {
-    const [field, value] = firstField;
-    const text = Array.isArray(value) ? value.join(" ") : String(value);
-    // non_field_errors reads like noise to a user; show just the message
-    return field === "non_field_errors" ? text : `${field}: ${text}`;
-  }
+  const entries = Object.entries(body);
+  if (entries.length === 0) return fallback;
 
-  return fallback;
+  const asText = ([, value]) => (Array.isArray(value) ? value.join(" ") : String(value));
+
+  // A single field's message usually names its own subject already ("Current
+  // password is incorrect"), so prefixing it with the raw field key just leaks
+  // the API's naming at the user. Only label fields when there are several and
+  // the reader would not otherwise know which one failed.
+  if (entries.length === 1) return asText(entries[0]);
+
+  return entries
+    .map(([field, value]) =>
+      field === "non_field_errors"
+        ? asText([field, value])
+        : `${humanizeField(field)}: ${asText([field, value])}`
+    )
+    .join(" ");
 }
 
 function redirectToLogin() {
