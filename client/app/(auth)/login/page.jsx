@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ui/themeToggle";
 import { login } from "@/lib/endpoints";
 import { getRole, homePathForRole } from "@/lib/auth";
 
-export default function LoginPage() {
+/** Only same-site paths, so ?next= cannot be used to bounce a user off-site. */
+function safeNext(value) {
+  return value && value.startsWith("/") && !value.startsWith("//") ? value : null;
+}
+
+function LoginForm() {
   const router = useRouter();
+  const next = safeNext(useSearchParams().get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,7 +28,8 @@ const handleSubmit = async (e) => {
     try {
       // login() stores both tokens, so the role is readable straight after
       await login({ email, password });
-      router.replace(homePathForRole(getRole()));
+      // honour where they were heading before being asked to sign in
+      router.replace(next ?? homePathForRole(getRole()));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -169,7 +176,7 @@ const handleSubmit = async (e) => {
               <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
                 New here?{" "}
                 <Link
-                  href="/signin"
+                  href={next ? `/signin?next=${encodeURIComponent(next)}` : "/signin"}
                   className="font-semibold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
                   Create an account
@@ -180,5 +187,19 @@ const handleSubmit = async (e) => {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600 dark:border-slate-700" />
+        </main>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
