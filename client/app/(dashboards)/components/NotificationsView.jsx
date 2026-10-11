@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { CheckCheck, LoaderCircle, Users } from "lucide-react";
 import {
   listNotifications,
@@ -176,9 +177,22 @@ export default function NotificationsView({ role = "founder" }) {
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">
-                      {notification.idea_title || "Notification"}
-                    </p>
+                    {notification.related_idea ? (
+                      <Link
+                        href={
+                          role === "investor"
+                            ? `/startups/${notification.related_idea}`
+                            : `/founder/myideas/${notification.related_idea}`
+                        }
+                        className="text-sm font-semibold transition hover:text-indigo-600"
+                      >
+                        {notification.idea_title || "View idea"}
+                      </Link>
+                    ) : (
+                      <p className="text-sm font-semibold">
+                        {notification.idea_title || "Notification"}
+                      </p>
+                    )}
                     <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-400">
                       {notification.message}
                     </p>
