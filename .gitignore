@@ -20,3 +20,5 @@ out/
 *.log
 .vscode/
 .idea/
+.CONTRIBUTION_GUIDE.MD/
+
