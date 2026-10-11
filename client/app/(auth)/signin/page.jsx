@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/app/components/ui/themeToggle";
 import { registerAndLogin } from "@/lib/endpoints";
 import { homePathForRole } from "@/lib/auth";
 
-export default function SignInPage() {
+/** Only same-site paths, so ?next= cannot be used to bounce a user off-site. */
+function safeNext(value) {
+  return value && value.startsWith("/") && !value.startsWith("//") ? value : null;
+}
+
+function SignInForm() {
   const router = useRouter();
+  const next = safeNext(useSearchParams().get("next"));
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,7 +36,9 @@ export default function SignInPage() {
     setLoading(true);
     try {
       await registerAndLogin({ firstName, lastName, email, password, role });
-      router.replace(homePathForRole(role));
+      // a founder who came here to submit an idea should land on the form;
+      // anyone else goes to their own dashboard
+      router.replace(next && role === "founder" ? next : homePathForRole(role));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -235,7 +243,7 @@ export default function SignInPage() {
               <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
                 Already have an account?{" "}
                 <Link
-                  href="/login"
+                  href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"}
                   className="font-semibold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
                   Log in
@@ -246,5 +254,19 @@ export default function SignInPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-indigo-600 dark:border-slate-700" />
+        </main>
+      }
+    >
+      <SignInForm />
+    </Suspense>
   );
 }
