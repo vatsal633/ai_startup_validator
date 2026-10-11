@@ -113,8 +113,9 @@ cd server
 python manage.py test
 ```
 
-98 tests covering authentication, the publish flow, tiered disclosure, the connection
-state machine and the background analysis task.
+127 tests covering authentication and role handling, the publish flow, tiered
+disclosure, the connection state machine, the background analysis task and the
+marketplace filters.
 
 > **Never commit** `.env`, `.env.local`, `venv/`, `node_modules/` or `db.sqlite3`.
 
@@ -181,6 +182,11 @@ This is enforced server-side in `IdeaDetailView`, which picks the serializer bas
 who is asking. A *pending* request is not enough — only an accepted one unlocks the
 report. Unpublished ideas are visible only to their founder and to admins.
 
+Reading a *published* idea needs no account, the same as the marketplace list it is
+reached from, so `/startups/<id>` works signed out and shows the public summary. The
+page never decides any of this: the detail response carries `my_connection_status`
+and `can_request_access`, and the UI renders whatever state it is handed.
+
 ---
 
 ## 🔌 API reference
@@ -212,7 +218,7 @@ without an extra request.
 | POST | `submit/` | Submit an idea; returns at once, analysis runs in the background |
 | GET | `mine/` | The founder's own ideas, every status |
 | GET | `dashboard/stats/` | Counts for the founder dashboard |
-| GET | `<id>/` | One idea — teaser or full report depending on who asks |
+| GET | `<id>/` | One idea — teaser or full report depending on who asks (**public**) |
 | PATCH | `<id>/` | Edit your own idea |
 | DELETE | `<id>/` | Delete your own idea |
 | POST | `<id>/publish/` | Publish a draft |
@@ -299,9 +305,11 @@ ai_startup_validator/
 │   │   ├── (auth)/            # login, signup, password reset
 │   │   ├── (dashboards)/      # founder and investor areas
 │   │   │   ├── components/    # shared dashboard UI
-│   │   │   ├── founder/
-│   │   │   └── investor/
-│   │   └── startups/          # public marketplace
+│   │   │   ├── founder/       # dashboard, myideas/[id], analyze,
+│   │   │   │                  #   requests, notifications, settings
+│   │   │   └── investor/      # dashboard, requests, notifications, settings
+│   │   ├── components/        # shared public UI (idea report rendering)
+│   │   └── startups/          # public marketplace + startups/[id]
 │   └── lib/                   # api client, endpoints, auth, helpers
 │
 ├── server/                    # Django backend
@@ -310,7 +318,6 @@ ai_startup_validator/
 │   ├── analysis/              # Gemini prompt + background task
 │   ├── connections/           # investor access requests
 │   ├── notifications/         # in-app notifications
-│   ├── matching/              # placeholder, not implemented
 │   └── config/                # settings and root urls
 │
 └── readme.md
@@ -332,20 +339,33 @@ cannot see these tokens; guarding server-side would mean moving to httpOnly cook
 
 ## ✅ Status
 
-**Working end to end:** registration and login with role-based routing, password
-reset by email, idea submission with background AI analysis, the full validation
-report, publish/unpublish, the public marketplace with search and filters, investor
-access requests, founder approve/decline, notifications, and profile settings.
+**The whole loop works:** a founder registers, submits an idea, the AI analysis runs
+in the background, they review the report and publish it; an investor discovers it on
+the marketplace, requests access, the founder approves, and the investor reads the
+full analysis. Every step has been exercised against a live Gemini report.
+
+**Every page exists.** Founder: dashboard, my ideas, idea detail, analyze, investor
+requests, notifications, settings. Investor: dashboard, my requests, notifications,
+settings. Public: landing, marketplace, idea detail, and the four auth screens.
 
 **Not implemented:**
 
-- `matching/` — intended to hold investor recommendation logic ("which ideas should
-  this investor see first?"). Currently an empty app. There is not yet enough
-  behavioural data to rank on, so it would need explicit investor preferences first.
+- Investor recommendations — ranking which ideas an investor should see first. The
+  placeholder app for this was removed rather than left empty; it needs explicit
+  investor preferences to rank on, since there is not enough behavioural data yet.
 - Admin dashboard beyond Django admin.
 - Photo upload, two-factor authentication, session management (the settings screen
   says so rather than pretending).
-- Messaging between founders and investors.
+- Messaging between founders and investors — accepted requests exchange email
+  addresses instead.
+
+**Known rough edges:**
+
+- A transient Gemini 503 marks an idea `failed`, so the founder has to press
+  **Retry analysis**. Worth an automatic retry if it happens often.
+- Changing a password does not end existing sessions. JWTs are stateless, so the old
+  access token stays valid until it expires. `token_blacklist` is installed if you
+  want to force a re-login.
 
 ---
 
