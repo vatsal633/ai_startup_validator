@@ -21,6 +21,18 @@ const NAV = {
       label: "Analyze Idea →",
     },
   },
+  admin: {
+    primary: [
+      { href: "/admin/dashboard", icon: "⌂", label: "Overview" },
+      { href: "/startups", icon: "💡", label: "Marketplace" },
+    ],
+    cta: {
+      title: "Manage records",
+      body: "Users, ideas and requests live in the Django admin.",
+      href: "http://127.0.0.1:8000/admin/",
+      label: "Open Django admin →",
+    },
+  },
   investor: {
     primary: [
       { href: "/investor/dashboard", icon: "⌂", label: "Dashboard" },
@@ -40,15 +52,18 @@ const Sidebar = ({ role = "founder", unreadCount = 0 }) => {
   const pathname = usePathname();
   const config = NAV[role] ?? NAV.founder;
 
-  const secondary = [
-    {
-      href: `/${role}/notifications`,
-      icon: "🔔",
-      label: "Notifications",
-      badge: unreadCount > 0 ? String(unreadCount) : undefined,
-    },
-    { href: `/${role}/settings`, icon: "⚙", label: "Settings" },
-  ];
+  const secondary =
+    role === "admin"
+      ? []
+      : [
+          {
+            href: `/${role}/notifications`,
+            icon: "🔔",
+            label: "Notifications",
+            badge: unreadCount > 0 ? String(unreadCount) : undefined,
+          },
+          { href: `/${role}/settings`, icon: "⚙", label: "Settings" },
+        ];
 
   // exact match, or a deeper page inside that section
   const isActive = (href) => pathname === href || pathname.startsWith(`${href}/`);
@@ -71,13 +86,17 @@ const Sidebar = ({ role = "founder", unreadCount = 0 }) => {
           ))}
         </nav>
 
-        <div className="my-6 border-t border-slate-200 dark:border-slate-800" />
+        {secondary.length > 0 && (
+          <div className="my-6 border-t border-slate-200 dark:border-slate-800" />
+        )}
 
-        <nav className="space-y-1">
-          {secondary.map((item) => (
-            <NavItem key={item.href} {...item} active={isActive(item.href)} />
-          ))}
-        </nav>
+        {secondary.length > 0 && (
+          <nav className="space-y-1">
+            {secondary.map((item) => (
+              <NavItem key={item.href} {...item} active={isActive(item.href)} />
+            ))}
+          </nav>
+        )}
 
         <div className="mt-auto rounded-xl bg-indigo-50 p-4 dark:bg-indigo-950/40">
           <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-300">

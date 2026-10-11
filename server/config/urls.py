@@ -17,8 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from accounts.stats_views import AdminStatsView
+
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/admin/stats/", AdminStatsView.as_view(), name="admin-stats"),
     path("api/auth/", include("accounts.urls")),
     path("api/ideas/", include("ideas.urls")),
     path("api/connections/", include("connections.urls")),
