@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 
 from connections.models import ConnectionRequest
-from ideas.models import Idea
+from ideas.models import Idea, IdeaReport
 from notifications.models import Notification
 
 User = get_user_model()
@@ -208,6 +208,87 @@ class InvestorProfileTests(ConnectionTestCase):
         ).json()
 
         self.assertEqual(body["investor_profile"]["email"], "investor@test.com")
+
+
+class FounderProfileTests(ConnectionTestCase):
+    """What an investor learns about a founder, and when — the mirror of
+    InvestorProfileTests."""
+
+    def setUp(self):
+        super().setUp()
+        self.founder.bio = "Building per-flat rooftop solar billing."
+        self.founder.location = "Pune, India"
+        self.founder.linkedin = "https://linkedin.com/in/ada"
+        self.founder.save()
+        self.connection = ConnectionRequest.objects.create(
+            idea=self.idea, investor=self.investor
+        )
+
+    def investor_sees(self):
+        self.client.force_authenticate(user=self.investor)
+        return self.client.get(reverse("my-connections")).json()["results"][0][
+            "founder_profile"
+        ]
+
+    def test_the_investor_sees_the_founder_profile(self):
+        profile = self.investor_sees()
+
+        self.assertEqual(profile["name"], "Ada F")
+        self.assertEqual(profile["location"], "Pune, India")
+
+    def test_the_founder_email_is_withheld_while_pending(self):
+        self.assertNotIn("email", self.investor_sees())
+
+    def test_the_founder_email_appears_once_accepted(self):
+        """Accepting is what gives the investor a way to make contact."""
+        self.connection.status = ConnectionRequest.Status.ACCEPTED
+        self.connection.save()
+
+        self.assertEqual(self.investor_sees()["email"], "founder@test.com")
+
+    def test_the_founder_email_stays_hidden_when_declined(self):
+        self.connection.status = ConnectionRequest.Status.DECLINED
+        self.connection.save()
+
+        self.assertNotIn("email", self.investor_sees())
+
+    def test_a_founder_always_sees_their_own_email(self):
+        self.client.force_authenticate(user=self.founder)
+
+        profile = self.client.get(reverse("my-connections")).json()["results"][0][
+            "founder_profile"
+        ]
+
+        self.assertEqual(profile["email"], "founder@test.com")
+
+
+class IdeaSummaryTests(ConnectionTestCase):
+    """The investor's list renders the idea without a second request."""
+
+    def setUp(self):
+        super().setUp()
+        IdeaReport.objects.create(idea=self.idea, ai_validation_score=87.0)
+        ConnectionRequest.objects.create(idea=self.idea, investor=self.investor)
+        self.client.force_authenticate(user=self.investor)
+
+    def test_summary_carries_the_fields_the_card_shows(self):
+        summary = self.client.get(reverse("my-connections")).json()["results"][0][
+            "idea_summary"
+        ]
+
+        self.assertEqual(summary["industry"], "AgriTech")
+        self.assertEqual(summary["stage_display"], "MVP")
+        self.assertEqual(summary["country"], "India")
+        self.assertEqual(summary["ai_validation_score"], 87.0)
+
+    def test_score_is_null_when_there_is_no_report(self):
+        IdeaReport.objects.all().delete()
+
+        summary = self.client.get(reverse("my-connections")).json()["results"][0][
+            "idea_summary"
+        ]
+
+        self.assertIsNone(summary["ai_validation_score"])
 
 
 class ListFilterTests(ConnectionTestCase):
