@@ -81,6 +81,11 @@ export const listMyIdeas = (filters = {}) =>
 
 export const getDashboardStats = () => apiGet("/api/ideas/dashboard/stats/");
 
+/* --------------------------------------------------------------- admin --- */
+
+/** Platform-wide statistics. Admin only; the API refuses anyone else. */
+export const getAdminStats = () => apiGet("/api/admin/stats/");
+
 /* --------------------------------------------------------- connections --- */
 
 export const requestConnection = (ideaId) =>

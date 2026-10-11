@@ -19,13 +19,14 @@ function Chrome({ role, children }) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const refreshUnread = useCallback(async () => {
+    if (role === "admin") return; // admins have no notification inbox
     try {
       const data = await getUnreadCount();
       setUnreadCount(data?.unread_count ?? 0);
     } catch {
       // a badge is not worth surfacing an error for
     }
-  }, []);
+  }, [role]);
 
   // re-check on navigation, so the badge settles after visiting notifications
   useEffect(() => {
