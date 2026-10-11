@@ -54,7 +54,6 @@ INSTALLED_APPS = [
     "accounts",
     "ideas",
     "analysis",
-    "matching",
     "connections",
     "notifications",
 ]
