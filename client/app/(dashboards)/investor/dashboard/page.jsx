@@ -47,12 +47,19 @@ function RecommendedCard({ idea, requestStatus, onRequest }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-lg font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+        <Link
+          href={`/startups/${idea.id}`}
+          aria-hidden="true"
+          tabIndex={-1}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-lg font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400"
+        >
           {(idea.title || "?").charAt(0).toUpperCase()}
-        </div>
+        </Link>
 
         <div className="min-w-0 flex-1">
-          <h3 className="font-bold">{idea.title}</h3>
+          <Link href={`/startups/${idea.id}`}>
+            <h3 className="font-bold transition hover:text-indigo-600">{idea.title}</h3>
+          </Link>
           <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">
             {idea.idea}
           </p>
@@ -81,7 +88,14 @@ function RecommendedCard({ idea, requestStatus, onRequest }) {
           </div>
         </div>
 
-        {requestStatus ? (
+        {requestStatus === "accepted" ? (
+          <Link
+            href={`/startups/${idea.id}`}
+            className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-center text-xs font-semibold text-white transition hover:bg-emerald-700"
+          >
+            View report
+          </Link>
+        ) : requestStatus ? (
           <span className="shrink-0 rounded-lg bg-slate-100 px-4 py-2 text-center text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
             {REQUEST_LABEL[requestStatus] ?? requestStatus}
           </span>

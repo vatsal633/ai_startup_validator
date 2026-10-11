@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowRight,
   BadgeCheck,
   Clock,
+  FileText,
   LoaderCircle,
   Mail,
   MapPin,
@@ -46,13 +48,22 @@ function RequestCard({ request }) {
   return (
     <li className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-lg font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
+        <Link
+          href={`/startups/${request.idea}`}
+          aria-hidden="true"
+          tabIndex={-1}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-lg font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400"
+        >
           {(request.idea_title || "?").charAt(0).toUpperCase()}
-        </div>
+        </Link>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold">{request.idea_title}</h3>
+            <Link href={`/startups/${request.idea}`}>
+              <h3 className="font-bold transition hover:text-indigo-600">
+                {request.idea_title}
+              </h3>
+            </Link>
             <span
               className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${status.className}`}
             >
@@ -116,6 +127,13 @@ function RequestCard({ request }) {
               <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-400/80">
                 Your request was accepted — reach out directly.
               </p>
+              <Link
+                href={`/startups/${request.idea}`}
+                className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 hover:underline dark:text-emerald-300"
+              >
+                <FileText size={14} /> Read the full analysis
+                <ArrowRight size={13} />
+              </Link>
             </div>
           )}
 
@@ -140,6 +158,12 @@ function RequestCard({ request }) {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Link
+            href={`/startups/${request.idea}`}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+          >
+            {request.status === "accepted" ? "View report" : "View startup"}
+          </Link>
           {founder.linkedin && (
             <a
               href={founder.linkedin}
