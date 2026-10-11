@@ -17,6 +17,7 @@ const EDITABLE = ["first_name", "last_name", "bio", "phone", "location", "linked
 
 export default function ProfileSettings() {
   const { user, loading, setUser, initial } = useUser();
+  const isInvestor = user?.role === "investor";
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(null); // which card is saving
   const [status, setStatus] = useState(null); // {card, type, message}
@@ -85,7 +86,11 @@ export default function ProfileSettings() {
     <div className="space-y-6">
       <SettingsCard
         title="Profile Information"
-        description="Update your public founder profile."
+        description={
+          isInvestor
+            ? "Update the profile founders see when you request access."
+            : "Update your public founder profile."
+        }
       >
         <div className="flex items-center gap-4">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-100 text-2xl font-bold text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
@@ -148,8 +153,12 @@ export default function ProfileSettings() {
       </SettingsCard>
 
       <SettingsCard
-        title="Founder Information"
-        description="Information investors can see on your founder profile."
+        title={isInvestor ? "Investor Information" : "Founder Information"}
+        description={
+          isInvestor
+            ? "Shown to founders deciding whether to share their full analysis with you."
+            : "Information investors can see on your founder profile."
+        }
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <InputField

@@ -132,25 +132,41 @@ class IdeaListView(generics.ListAPIView):
 
 class IdeaDetailView(generics.RetrieveAPIView):
     queryset = Idea.objects.select_related("founder", "report")
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        # reading a published idea is public, the same as the marketplace list
+        # it is reached from; editing and deleting are not
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def retrieve(self, request, *args, **kwargs):
         idea = self.get_object()
         user = request.user
+        signed_in = user.is_authenticated
 
-        is_founder = idea.founder_id == user.id
-        is_admin = user.role == "admin"
+        is_founder = signed_in and idea.founder_id == user.id
+        is_admin = signed_in and user.role == "admin"
 
         # an unpublished idea is visible only to its founder and to admins
         if idea.status != Idea.Status.PUBLISHED and not (is_founder or is_admin):
             raise PermissionDenied("This idea is not published.")
 
-        has_accepted_connection = ConnectionRequest.objects.filter(
-            idea=idea, investor=user, status=ConnectionRequest.Status.ACCEPTED
-        ).exists()
+        my_connection_status = None
+        has_accepted_connection = False
+        if signed_in and not is_founder:
+            connection = ConnectionRequest.objects.filter(
+                idea=idea, investor=user
+            ).first()
+            if connection:
+                my_connection_status = connection.status
+                has_accepted_connection = (
+                    connection.status == ConnectionRequest.Status.ACCEPTED
+                )
 
-        # count the view (not the founder's own, not admins), once per viewer per 24h
-        if not is_founder and not is_admin:
+        # count the view (not the founder's own, not admins, not anonymous),
+        # once per viewer per 24h
+        if signed_in and not is_founder and not is_admin:
             since = timezone.now() - timedelta(hours=24)
             if not IdeaView.objects.filter(idea=idea, viewer=user, viewed_at__gte=since).exists():
                 IdeaView.objects.create(idea=idea, viewer=user)
@@ -160,8 +176,17 @@ class IdeaDetailView(generics.RetrieveAPIView):
         else:
             serializer_class = IdeaTeaserSerializer
 
-        serializer = serializer_class(idea, context=self.get_serializer_context())
-        return Response(serializer.data)
+        data = serializer_class(idea, context=self.get_serializer_context()).data
+        # so the page knows whether to offer "Request access", and the API stays
+        # the single source of truth for that decision
+        data["my_connection_status"] = my_connection_status
+        data["can_request_access"] = bool(
+            signed_in
+            and getattr(user, "role", None) == "investor"
+            and not is_founder
+            and my_connection_status is None
+        )
+        return Response(data)
 
     def patch(self, request, *args, **kwargs):
         """PATCH /api/ideas/<id>/ : founder edits their own idea.

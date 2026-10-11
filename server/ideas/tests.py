@@ -321,6 +321,112 @@ class DetailPayloadTests(IdeaTestCase):
         self.assertFalse(row["is_owner"])
 
 
+class AnonymousDetailTests(IdeaTestCase):
+    """Reading a published idea is public, the same as the list it comes from.
+    The privacy boundary must not move with it."""
+
+    def setUp(self):
+        super().setUp()
+        self.published = self.make_idea(status=Idea.Status.PUBLISHED)
+        self.draft = self.make_idea(status=Idea.Status.DRAFT, title="Hidden Draft")
+
+    def test_a_published_idea_is_readable_signed_out(self):
+        response = self.client.get(reverse("idea-detail", args=[self.published.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["title"], "FarmSense AI")
+
+    def test_an_anonymous_reader_gets_only_the_teaser(self):
+        body = self.client.get(reverse("idea-detail", args=[self.published.id])).json()
+
+        for private in ("report", "problem", "solution", "differentiator", "competitors"):
+            self.assertNotIn(private, body)
+
+    def test_an_unpublished_idea_is_not_readable_signed_out(self):
+        response = self.client.get(reverse("idea-detail", args=[self.draft.id]))
+
+        self.assertIn(response.status_code, (401, 403))
+
+    def test_an_anonymous_read_is_not_counted_as_a_view(self):
+        """IdeaView needs a user; an anonymous hit must not try to record one."""
+        self.client.get(reverse("idea-detail", args=[self.published.id]))
+
+        self.assertEqual(IdeaView.objects.count(), 0)
+
+    def test_editing_still_requires_authentication(self):
+        url = reverse("idea-detail", args=[self.published.id])
+
+        self.assertIn(
+            self.client.patch(url, {"title": "x"}, format="json").status_code,
+            (401, 403),
+        )
+        self.assertIn(self.client.delete(url).status_code, (401, 403))
+        self.published.refresh_from_db()
+        self.assertEqual(self.published.title, "FarmSense AI")
+
+
+class RequestAccessFlagsTests(IdeaTestCase):
+    """The detail response tells the page whether to offer "Request access"."""
+
+    def setUp(self):
+        super().setUp()
+        self.idea = self.make_idea(status=Idea.Status.PUBLISHED)
+        self.url = reverse("idea-detail", args=[self.idea.id])
+
+    def test_an_investor_with_no_request_can_request(self):
+        self.as_investor()
+        body = self.client.get(self.url).json()
+
+        self.assertTrue(body["can_request_access"])
+        self.assertIsNone(body["my_connection_status"])
+
+    def test_an_investor_who_already_asked_cannot_request_again(self):
+        ConnectionRequest.objects.create(idea=self.idea, investor=self.investor)
+        self.as_investor()
+
+        body = self.client.get(self.url).json()
+
+        self.assertFalse(body["can_request_access"])
+        self.assertEqual(body["my_connection_status"], "pending")
+
+    def test_an_accepted_investor_sees_the_status_and_the_report(self):
+        ConnectionRequest.objects.create(
+            idea=self.idea, investor=self.investor,
+            status=ConnectionRequest.Status.ACCEPTED,
+        )
+        self.as_investor()
+
+        body = self.client.get(self.url).json()
+
+        self.assertEqual(body["my_connection_status"], "accepted")
+        self.assertFalse(body["can_request_access"])
+        self.assertIn("report", body)
+
+    def test_a_declined_investor_keeps_the_teaser_and_cannot_re_request(self):
+        ConnectionRequest.objects.create(
+            idea=self.idea, investor=self.investor,
+            status=ConnectionRequest.Status.DECLINED,
+        )
+        self.as_investor()
+
+        body = self.client.get(self.url).json()
+
+        self.assertEqual(body["my_connection_status"], "declined")
+        self.assertFalse(body["can_request_access"])
+        self.assertNotIn("report", body)
+
+    def test_a_founder_is_never_offered_access_to_their_own_idea(self):
+        self.as_founder()
+
+        self.assertFalse(self.client.get(self.url).json()["can_request_access"])
+
+    def test_an_anonymous_reader_is_not_offered_access(self):
+        body = self.client.get(self.url).json()
+
+        self.assertFalse(body["can_request_access"])
+        self.assertIsNone(body["my_connection_status"])
+
+
 class ViewCountTests(IdeaTestCase):
     def setUp(self):
         super().setUp()
